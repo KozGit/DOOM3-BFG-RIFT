@@ -41,11 +41,16 @@ If you have questions concerning this license or the applicable additional terms
 #undef StrCmpN
 #undef StrCmpNI
 #undef StrCmpI
-#include <atlbase.h>
 
 #include <comdef.h>
 #include <comutil.h>
 #include <Wbemidl.h>
+
+#if defined(USE_MFC_TOOLS)
+	#include <atlbase.h>
+#else
+	#include "win_nanoafx.h"
+#endif
 
 #pragma comment (lib, "wbemuuid.lib")
 

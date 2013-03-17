@@ -169,6 +169,7 @@
     <ClInclude Include="framework\Unzip.h" />
     <ClInclude Include="framework\UsercmdGen.h" />
     <ClInclude Include="framework\Zip.h" />
+    <ClInclude Include="sys\win32\win_nanoafx.h" />
     <ClInclude Include="renderer\AutoRender.h" />
     <ClInclude Include="renderer\AutoRenderBink.h" />
     <ClInclude Include="renderer\BinaryImage.h" />
