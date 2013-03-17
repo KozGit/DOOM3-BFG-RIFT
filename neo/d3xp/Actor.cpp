@@ -1810,7 +1810,8 @@ idActor::SetDeltaViewAngles
 ================
 */
 void idActor::SetDeltaViewAngles( const idAngles &delta ) {
-	deltaViewAngles = delta;
+	//deltaViewAngles = delta;
+	deltaViewAngles.Zero();
 }
 
 /*

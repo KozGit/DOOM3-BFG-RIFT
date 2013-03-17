@@ -29,6 +29,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 #pragma hdrstop
 
+#include "../sys/win32/in_motion_sensor.h"
+
 idCVar joy_mergedThreshold( "joy_mergedThreshold", "1", CVAR_BOOL | CVAR_ARCHIVE, "If the thresholds aren't merged, you drift more off center" );
 idCVar joy_newCode( "joy_newCode", "1", CVAR_BOOL | CVAR_ARCHIVE, "Use the new codepath" );
 idCVar joy_triggerThreshold( "joy_triggerThreshold", "0.05", CVAR_FLOAT | CVAR_ARCHIVE, "how far the joystick triggers have to be pressed before they register as down" );
@@ -242,6 +244,7 @@ private:
 	void			HandleJoystickAxis( int keyNum, float unclampedValue, float threshold, bool positive );
 	void			JoystickMove();
 	void			JoystickMove2();
+	void			MotionSensorMove();
 	void			MouseMove();
 	void			CmdButtons();
 
@@ -431,6 +434,18 @@ void idUsercmdGenLocal::KeyMove() {
 
 	cmd.forwardmove += idMath::ClampChar( forward );
 	cmd.rightmove += idMath::ClampChar( side );
+}
+
+
+
+/*
+=================
+idUsercmdGenLocal::MotionSensorMove
+=================
+*/
+idVec3 imuAngles;
+void idUsercmdGenLocal::MotionSensorMove() {
+	IN_MotionSensor_Read(imuAngles[ROLL], imuAngles[PITCH], imuAngles[YAW]);
 }
 
 /*
@@ -1002,7 +1017,7 @@ creates the current command for this frame
 */
 void idUsercmdGenLocal::MakeCurrent() {
 	idVec3 oldAngles = viewangles;
-	
+
 	if ( !Inhibited() ) {
 		// update toggled key states
 		toggled_crouch.SetKeyState( ButtonState( UB_MOVEDOWN ), in_toggleCrouch.GetBool() );
@@ -1023,28 +1038,41 @@ void idUsercmdGenLocal::MakeCurrent() {
 		// keyboard angle adjustment
 		AdjustAngles();
 
+
+		// get head tracker angles
+		MotionSensorMove();
+
 		// set button bits
 		CmdButtons();
 
 		// get basic movement from keyboard
 		KeyMove();
-
+		
 		// aim assist
 		AimAssist();
 
 		// check to make sure the angles haven't wrapped
+		/*
 		if ( viewangles[PITCH] - oldAngles[PITCH] > 90 ) {
 			viewangles[PITCH] = oldAngles[PITCH] + 90;
 		} else if ( oldAngles[PITCH] - viewangles[PITCH] > 90 ) {
 			viewangles[PITCH] = oldAngles[PITCH] - 90;
-		} 
+		} */
 	} else {
 		mouseDx = 0;
 		mouseDy = 0;
 	}
 
+
+	idVec3 cmdangles = viewangles + imuAngles;
+	//idVec3 cmdangles = imuAngles;
+	//cmdangles[YAW] += viewangles[YAW];
+
+	//viewangles = imuAngles;
+
 	for ( int i = 0; i < 3; i++ ) {
-		cmd.angles[i] = ANGLE2SHORT( viewangles[i] );
+		//cmd.angles[i] = ANGLE2SHORT( viewangles[i] );
+		cmd.angles[i] = ANGLE2SHORT( cmdangles[i] );
 	}
 
 	cmd.mx = continuousMouseX;
@@ -1100,6 +1128,8 @@ idUsercmdGenLocal::Init
 */
 void idUsercmdGenLocal::Init() {
 	initialized = true;
+
+	IN_MotionSensor_Init();
 }
 
 /*

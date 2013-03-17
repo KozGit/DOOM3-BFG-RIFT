@@ -540,6 +540,8 @@
     <ClInclude Include="sys\win32\win_nanoafx.h">
       <Filter>Sys\Win32</Filter>
     </ClInclude>
+    <ClInclude Include="sys\win32\in_motion_sensor.h" />
+    <ClInclude Include="sys\win32\MahonyAHRS.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cm\CollisionModel_contacts.cpp">
@@ -1139,6 +1141,8 @@
     <ClCompile Include="sys\win32\win_session_local.cpp">
       <Filter>Sys\Win32</Filter>
     </ClCompile>
+    <ClCompile Include="sys\win32\in_motion_sensor.cpp" />
+    <ClCompile Include="sys\win32\MahonyAHRS.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sys\win32\rc\res\doom.ico">
