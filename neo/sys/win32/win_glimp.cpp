@@ -355,11 +355,20 @@ static HGLRC CreateOpenGLContextOnDC( const HDC hdc, const bool debugContext ) {
 			0
 		};
 
-		m_hrc = wglCreateContextAttribsARB( hdc, 0, attribs );
-		if ( m_hrc != NULL ) {
-			idLib::Printf( "created OpenGL %d.%d context\n", glMajorVersion, glMinorVersion );
-			break;
+		if (wglCreateContextAttribsARB) {
+			m_hrc = wglCreateContextAttribsARB( hdc, 0, attribs ); //Carl Kenner: Fix crash on startup on my mum's laptop
+			if ( m_hrc != NULL ) {
+				idLib::Printf( "created OpenGL %d.%d context\n", glMajorVersion, glMinorVersion );
+				break;
+			}
+		} else if (!useOpenGL32) {
+			m_hrc = wglCreateContext(hdc);
+			if ( m_hrc != NULL ) {
+				idLib::Printf( "created OpenGL context, wglCreateContextAttribsARB didn't exist\n");
+				break;
+			}
 		}
+			
 
 		idLib::Printf( "failed to create OpenGL %d.%d context\n", glMajorVersion, glMinorVersion );
 		useOpenGL32 = 0;	// fall back to OpenGL 2.0

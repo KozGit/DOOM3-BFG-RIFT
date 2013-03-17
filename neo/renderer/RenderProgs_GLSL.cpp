@@ -1260,9 +1260,11 @@ void idRenderProgManager::LoadGLSLProgram( const int programIndex, const int ver
 	}
 
 	// get the uniform buffer binding for skinning joint matrices
-	GLint blockIndex = qglGetUniformBlockIndex( program, "matrices_ubo" );
-	if ( blockIndex != -1 ) {
-		qglUniformBlockBinding( program, blockIndex, 0 );
+	if (qglGetUniformBlockIndex) { //Carl Kenner
+		GLint blockIndex = qglGetUniformBlockIndex( program, "matrices_ubo" );
+		if ( blockIndex != -1 ) {
+			qglUniformBlockBinding( program, blockIndex, 0 );
+		}
 	}
 
 	// set the texture unit locations once for the render program. We only need to do this once since we only link the program once

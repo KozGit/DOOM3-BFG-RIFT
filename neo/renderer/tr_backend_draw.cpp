@@ -1325,7 +1325,7 @@ The stencil buffer should have been set to 128 on any surfaces that might receiv
 =====================
 */
 static void RB_StencilShadowPass( const drawSurf_t *drawSurfs, const viewLight_t * vLight ) {
-	if ( r_skipShadows.GetBool() ) {
+	if ( r_skipShadows.GetBool() || !qglDrawElementsBaseVertex ) { //Carl Kenner: For hardware that doesn't support qglDrawElementsBaseVertex
 		return;
 	}
 
@@ -2511,7 +2511,8 @@ void RB_DrawViewInternal( const viewDef_t * viewDef, const int stereoEye ) {
 
 #ifdef USE_CORE_PROFILE
 	// bind one global Vertex Array Object (VAO)
-	qglBindVertexArray( glConfig.global_vao );
+	if (qglBindVertexArray) //Carl Kenner
+		qglBindVertexArray( glConfig.global_vao );
 #endif
 
 	//------------------------------------

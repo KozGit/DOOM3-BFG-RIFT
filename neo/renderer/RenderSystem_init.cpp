@@ -47,7 +47,7 @@ idCVar r_skipIntelWorkarounds( "r_skipIntelWorkarounds", "0", CVAR_RENDERER | CV
 idCVar r_multiSamples( "r_multiSamples", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "number of antialiasing samples" );
 idCVar r_vidMode( "r_vidMode", "0", CVAR_ARCHIVE | CVAR_RENDERER | CVAR_INTEGER, "fullscreen video mode number" );
 idCVar r_displayRefresh( "r_displayRefresh", "0", CVAR_RENDERER | CVAR_INTEGER | CVAR_NOCHEAT, "optional display refresh rate option for vid mode", 0.0f, 240.0f );
-idCVar r_fullscreen( "r_fullscreen", "1", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "0 = windowed, 1 = full screen on monitor 1, 2 = full screen on monitor 2, etc" );
+idCVar r_fullscreen( "r_fullscreen", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "0 = windowed, 1 = full screen on monitor 1, 2 = full screen on monitor 2, etc" );
 idCVar r_customWidth( "r_customWidth", "1280", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "custom screen width. set r_vidMode to -1 to activate" );
 idCVar r_customHeight( "r_customHeight", "720", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "custom screen height. set r_vidMode to -1 to activate" );
 idCVar r_windowX( "r_windowX", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "Non-fullscreen parameter" );
@@ -501,7 +501,7 @@ static void R_CheckPortableExtensions() {
 		if ( glConfig.uniformBufferOffsetAlignment < 256 ) {
 			glConfig.uniformBufferOffsetAlignment = 256;
 		}
-	}
+	} else glConfig.uniformBufferOffsetAlignment = 256; //Carl Kenner
 
 	// ATI_separate_stencil / OpenGL 2.0 separate stencil
 	glConfig.twoSidedStencilAvailable = ( glConfig.glVersion >= 2.0f ) || R_CheckExtension( "GL_ATI_separate_stencil" );
@@ -589,15 +589,15 @@ static void R_CheckPortableExtensions() {
 	}
 	// GL_ARB_map_buffer_range
 	if ( !glConfig.mapBufferRangeAvailable ) {
-		idLib::Error( "GL_ARB_map_buffer_range not available" );
+		idLib::Warning( "GL_ARB_map_buffer_range not available" ); //Carl Kenner: fallback to qglMapBufferARB
 	}
 	// GL_ARB_vertex_array_object
 	if ( !glConfig.vertexArrayObjectAvailable ) {
-		idLib::Error( "GL_ARB_vertex_array_object not available" );
+		idLib::Warning( "GL_ARB_vertex_array_object not available" ); //Carl Kenner: is this neeeded?
 	}
 	// GL_ARB_draw_elements_base_vertex
 	if ( !glConfig.drawElementsBaseVertexAvailable ) {
-		idLib::Error( "GL_ARB_draw_elements_base_vertex not available" );
+		idLib::Warning( "GL_ARB_draw_elements_base_vertex not available, no stencil shadows!" ); //Carl Kenner: only used for stencil shadows
 	}
 	// GL_ARB_vertex_program / GL_ARB_fragment_program
 	if ( !glConfig.fragmentProgramAvailable ) {
@@ -609,7 +609,7 @@ static void R_CheckPortableExtensions() {
 	}
 	// GL_ARB_uniform_buffer_object
 	if ( !glConfig.uniformBufferAvailable ) {
-		idLib::Error( "GL_ARB_uniform_buffer_object not available" );
+		idLib::Warning( "GL_ARB_uniform_buffer_object not available" );
 	}
 	// GL_EXT_stencil_two_side
 	if ( !glConfig.twoSidedStencilAvailable ) {
@@ -617,8 +617,10 @@ static void R_CheckPortableExtensions() {
 	}
 
 	// generate one global Vertex Array Object (VAO)
-	qglGenVertexArrays( 1, &glConfig.global_vao );
-	qglBindVertexArray( glConfig.global_vao );
+	if (qglGenVertexArrays && qglBindVertexArray) { //Carl Kenner
+		qglGenVertexArrays( 1, &glConfig.global_vao );
+		qglBindVertexArray( glConfig.global_vao );
+	}
 
 }
 
