@@ -1,0 +1,3 @@
+[submodule "dependencies/vrpn"]
+	path = dependencies/vrpn
+	url = git://git.cs.unc.edu/vrpn.git

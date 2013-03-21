@@ -1,7 +1,9 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual C++ Express 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Doom3BFG", "doomexe.vcxproj", "{49BEC5C6-B964-417A-851E-808886B57420}"
 	ProjectSection(ProjectDependencies) = postProject
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C} = {7EE1DB03-16A5-4465-9164-061BE0C88B8C}
+		{0C16E98C-A372-4E58-990D-EE276B32644E} = {0C16E98C-A372-4E58-990D-EE276B32644E}
 		{0BC6FCC9-C65E-4B1F-9A58-0B9399987C9F} = {0BC6FCC9-C65E-4B1F-9A58-0B9399987C9F}
 	EndProjectSection
 EndProject
@@ -17,6 +19,10 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "doomclassic", "..\doomclass
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "timidity", "..\doomclassic\timidity\timidity.vcxproj", "{3267F0ED-FE57-4348-91D7-AA8A4976750F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vrpn", "..\dependencies\vrpn.vcxproj", "{7EE1DB03-16A5-4465-9164-061BE0C88B8C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "quatlib", "..\dependencies\quatlib.vcxproj", "{0C16E98C-A372-4E58-990D-EE276B32644E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -24,18 +30,18 @@ Global
 		Retail|Win32 = Retail|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{49BEC5C6-B964-417A-851E-808886B57400}.Debug|Win32.ActiveCfg = Debug|Win32
-		{49BEC5C6-B964-417A-851E-808886B57400}.Debug|Win32.Build.0 = Debug|Win32
-		{49BEC5C6-B964-417A-851E-808886B57400}.Release|Win32.ActiveCfg = Release|Win32
-		{49BEC5C6-B964-417A-851E-808886B57400}.Release|Win32.Build.0 = Release|Win32
-		{49BEC5C6-B964-417A-851E-808886B57400}.Retail|Win32.ActiveCfg = Retail|Win32
-		{49BEC5C6-B964-417A-851E-808886B57400}.Retail|Win32.Build.0 = Retail|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Debug|Win32.ActiveCfg = Debug|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Debug|Win32.Build.0 = Debug|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Release|Win32.ActiveCfg = Release|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Release|Win32.Build.0 = Release|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Retail|Win32.ActiveCfg = Retail|Win32
 		{49BEC5C6-B964-417A-851E-808886B57420}.Retail|Win32.Build.0 = Retail|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Debug|Win32.ActiveCfg = Debug|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Debug|Win32.Build.0 = Debug|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Release|Win32.ActiveCfg = Release|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Release|Win32.Build.0 = Release|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Retail|Win32.ActiveCfg = Retail|Win32
+		{49BEC5C6-B964-417A-851E-808886B57400}.Retail|Win32.Build.0 = Retail|Win32
 		{0BC6FCC9-C65E-4B1F-9A58-0B9399987C9F}.Debug|Win32.ActiveCfg = Debug|Win32
 		{0BC6FCC9-C65E-4B1F-9A58-0B9399987C9F}.Debug|Win32.Build.0 = Debug|Win32
 		{0BC6FCC9-C65E-4B1F-9A58-0B9399987C9F}.Release|Win32.ActiveCfg = Release|Win32
@@ -66,6 +72,18 @@ Global
 		{3267F0ED-FE57-4348-91D7-AA8A4976750F}.Release|Win32.Build.0 = Release|Win32
 		{3267F0ED-FE57-4348-91D7-AA8A4976750F}.Retail|Win32.ActiveCfg = Release|Win32
 		{3267F0ED-FE57-4348-91D7-AA8A4976750F}.Retail|Win32.Build.0 = Release|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Debug|Win32.Build.0 = Debug|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Release|Win32.ActiveCfg = Release|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Release|Win32.Build.0 = Release|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Retail|Win32.ActiveCfg = Release|Win32
+		{7EE1DB03-16A5-4465-9164-061BE0C88B8C}.Retail|Win32.Build.0 = Release|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Debug|Win32.Build.0 = Debug|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Release|Win32.ActiveCfg = Release|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Release|Win32.Build.0 = Release|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Retail|Win32.ActiveCfg = Release|Win32
+		{0C16E98C-A372-4E58-990D-EE276B32644E}.Retail|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
