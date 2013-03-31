@@ -1,10 +1,12 @@
 #pragma hdrstop
 
 #include "../../idlib/precompiled.h"
+#undef strncmp
 
 #include "../../../dependencies/libfreespace/include/freespace/freespace.h"
 #include "../../../dependencies/vrpn/vrpn_Tracker.h"
 #include "../../../dependencies/vrpn/quat/quat.h"
+
 #include "in_motion_sensor.h"
 #include "MahonyAHRS.h"
 
@@ -14,6 +16,8 @@
 
 #ifdef WIN32
 #include <windows.h>
+#include "../../../dependencies/OculusSDK/include/OVR.h"
+using namespace OVR;
 
 #define RADIANS_TO_DEGREES(rad) ((float) rad * (float) (180.0 / idMath::PI))
 
@@ -21,6 +25,16 @@ void IN_MotionSensor_Thread(void);
 
 FreespaceDeviceId device;
 float angles[3];
+
+
+    // *** Oculus HMD Variables
+    
+    Ptr<DeviceManager>  pManager;
+    Ptr<SensorDevice>   pSensor;
+    Ptr<HMDDevice>      pHMD;
+    SensorFusion        SFusion;
+//    OVR::HMDInfo        HMDInfo;
+
 
 vrpn_Tracker_Remote* vrpnTracker = new vrpn_Tracker_Remote("Tracker0@localhost");
 
@@ -32,7 +46,47 @@ void VRPN_CALLBACK handle_tracker(void* userData, const vrpn_TRACKERCB t )
 
 void IN_MotionSensor_Init(void)
 {
+	// *** Oculus Sensor Initialization
+	OVR::System::Init(OVR::Log::ConfigureDefaultLog(OVR::LogMask_All));
 
+    // Create DeviceManager and first available HMDDevice from it.
+    // Sensor object is created from the HMD, to ensure that it is on the
+    // correct device.
+
+    pManager = *DeviceManager::Create();
+
+	// We'll handle it's messages in this case.
+	//pManager->SetMessageHandler(this);
+
+    // Release Sensor/HMD in case this is a retry.
+    pSensor.Clear();
+    pHMD.Clear();
+    pHMD  = *pManager->EnumerateDevices<HMDDevice>().CreateDevice();
+    if (pHMD)
+    {
+        pSensor = *pHMD->GetSensor();
+    }
+    else
+    {            
+        // If we didn't detect an HMD, try to create the sensor directly.
+        // This is useful for debugging sensor interaction; it is not needed in
+        // a shipping app.
+        pSensor = *pManager->EnumerateDevices<SensorDevice>().CreateDevice();
+    }
+    if (!pHMD && !pSensor)
+        common->Warning("Oculus Rift not detected.\n");
+    else if (!pHMD)
+        common->Warning("Oculus Sensor detected; HMD Display not detected.\n");
+    else if (!pSensor)
+        common->Warning("Oculus HMD Display detected; Sensor not detected.\n");
+    //else if (HMDInfo.DisplayDeviceName[0] == '\0')
+    //    common->Printf("Oculus Sensor detected; HMD display EDID not detected.\n");
+
+	if (pSensor)
+		SFusion.AttachToSensor(pSensor);
+
+
+	//Hillcrest libfreespace stuff
 	LPDWORD dwThreadId=0;
 	struct freespace_message message;
 	int numIds;
@@ -42,26 +96,26 @@ void IN_MotionSensor_Init(void)
 	// Initialize the freespace library
 	rc = freespace_init();
 	if (rc != FREESPACE_SUCCESS) {
-		//printf("Initialization error. rc=%d\n", rc);
+		common->Warning("Hillcrest Initialization error. rc=%d\n", rc);
 		return;
 	}
 
 	/** --- START EXAMPLE INITIALIZATION OF DEVICE -- **/
 	rc = freespace_getDeviceList(&device, 1, &numIds);
 	if (numIds == 0) {
-		//printf("MotionSensor: Didn't find any devices.\n");
+		common->Warning("MotionSensor: Didn't find any devices.\n");
 		return;
 	}
 
 	rc = freespace_openDevice(device);
 	if (rc != FREESPACE_SUCCESS) {
-		//printf("MotionSensor: Error opening device: %d\n", rc);
+		common->Warning("MotionSensor: Error opening device: %d\n", rc);
 		return;
 	}
 
 	rc = freespace_flush(device);
 	if (rc != FREESPACE_SUCCESS) {
-		//printf("MotionSensor: Error flushing device: %d\n", rc);
+		common->Warning("MotionSensor: Error flushing device: %d\n", rc);
 		return;
 	}
 
@@ -72,9 +126,8 @@ void IN_MotionSensor_Init(void)
 
 	rc = freespace_sendMessage(device, &message);
 	if (rc != FREESPACE_SUCCESS) {
-		//printf("freespaceInputThread: Could not send message: %d.\n", rc);
+		common->Warning("freespaceInputThread: Could not send message: %d.\n", rc);
 	}
-
 	CreateThread(NULL, //Choose default security
 		0, //Default stack size
 		(LPTHREAD_START_ROUTINE)&IN_MotionSensor_Thread,
@@ -134,9 +187,18 @@ void IN_MotionSensor_Thread()
 
 void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 {
-	roll  = angles[ROLL];
-	pitch = angles[PITCH];
-	yaw   = angles[YAW];
+		if (SFusion.IsAttachedToSensor()) {
+			Quatf hmdOrient = SFusion.GetOrientation();
+			float y = 0.0f, p = 0.0f, r = 0.0f;
+			hmdOrient.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
+			roll =    RADIANS_TO_DEGREES(r);   // ???
+			pitch =   -RADIANS_TO_DEGREES(p); // should be degrees down
+			yaw =     RADIANS_TO_DEGREES(y);    // should be degrees left
+		} else {
+			roll  = angles[ROLL];
+			pitch = angles[PITCH];
+			yaw   = angles[YAW];
+		}
 }
 
 #else
