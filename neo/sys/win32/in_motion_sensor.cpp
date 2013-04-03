@@ -191,9 +191,9 @@ void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 			Quatf hmdOrient = SFusion.GetOrientation();
 			float y = 0.0f, p = 0.0f, r = 0.0f;
 			hmdOrient.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
-			roll =    RADIANS_TO_DEGREES(r);   // ???
-			pitch =   -RADIANS_TO_DEGREES(p); // should be degrees down
-			yaw =     RADIANS_TO_DEGREES(y);    // should be degrees left
+			roll =   -RADIANS_TO_DEGREES(r); // ???
+			pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
+			yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
 		} else {
 			roll  = angles[ROLL];
 			pitch = angles[PITCH];
