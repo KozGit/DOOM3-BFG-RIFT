@@ -6053,6 +6053,16 @@ void idPlayer::UpdateViewAngles() {
 		// no view changes at all, but we still want to update the deltas or else when
 		// we get out of this mode, our view will snap to a kind of random angle
 		UpdateDeltaViewAngles( viewAngles );
+
+		for ( i = 0; i < 3; i++ ) {
+			cmdAngles[i] = SHORT2ANGLE( usercmd.angles[i] );
+			if ( influenceActive == INFLUENCE_LEVEL3 ) {
+				viewAngles[i] += idMath::ClampFloat( -1.0f, 1.0f, idMath::AngleDelta( idMath::AngleNormalize180( SHORT2ANGLE( usercmd.angles[i]) + deltaViewAngles[i] ) , viewAngles[i] ) );
+			} else {
+				viewAngles[i] = idMath::AngleNormalize180( SHORT2ANGLE( usercmd.angles[i]) + deltaViewAngles[i] );
+			}
+		}
+
 		return;
 	}
 
@@ -9046,6 +9056,7 @@ void idPlayer::CalculateRenderView() {
 		if ( privateCameraView ) {
 			privateCameraView->GetViewParms( renderView );
 		} else {
+			renderView->viewaxis = firstPersonViewAxis;
 			gameLocal.GetCamera()->GetViewParms( renderView );
 		}
 	} else {

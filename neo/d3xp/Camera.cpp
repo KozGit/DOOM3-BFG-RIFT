@@ -522,7 +522,7 @@ void idCameraAnim::GetViewParms( renderView_t *view ) {
 	// clamp to the first frame.  also check if this is a one frame anim.  one frame anims would end immediately,
 	// but since they're mainly used for static cams anyway, just stay on it infinitely.
 	if ( ( frame < 0 ) || ( camera.Num() < 2 ) ) {
-		view->viewaxis = camera[ 0 ].q.ToQuat().ToMat3();
+		view->viewaxis = view->viewaxis * camera[ 0 ].q.ToQuat().ToMat3();
 		view->vieworg = camera[ 0 ].t + offset;
 		view->fov_x = camera[ 0 ].fov;
 	} else if ( frame > camera.Num() - 2 ) {
@@ -545,13 +545,13 @@ void idCameraAnim::GetViewParms( renderView_t *view ) {
 		} else {
 			// just use our last frame
 			camFrame = &camera[ camera.Num() - 1 ];
-			view->viewaxis = camFrame->q.ToQuat().ToMat3();
+			view->viewaxis = view->viewaxis * camFrame->q.ToQuat().ToMat3();
 			view->vieworg = camFrame->t + offset;
 			view->fov_x = camFrame->fov;
 		}
 	} else if ( lerp == 0.0f ) {
 		camFrame = &camera[ frame ];
-		view->viewaxis = camFrame[ 0 ].q.ToMat3();
+		view->viewaxis = view->viewaxis * camFrame[ 0 ].q.ToMat3();
 		view->vieworg = camFrame[ 0 ].t + offset;
 		view->fov_x = camFrame[ 0 ].fov;
 	} else {
@@ -560,10 +560,12 @@ void idCameraAnim::GetViewParms( renderView_t *view ) {
 		q1 = camFrame[ 0 ].q.ToQuat();
 		q2 = camFrame[ 1 ].q.ToQuat();
 		q3.Slerp( q1, q2, lerp );
-		view->viewaxis = q3.ToMat3();
+		view->viewaxis = view->viewaxis * q3.ToMat3();
 		view->vieworg = camFrame[ 0 ].t * invlerp + camFrame[ 1 ].t * lerp + offset;
 		view->fov_x = camFrame[ 0 ].fov * invlerp + camFrame[ 1 ].fov * lerp;
 	}
+
+	view->fov_x = g_fov.GetFloat();
 
 	gameLocal.CalcFov( view->fov_x, view->fov_x, view->fov_y );
 

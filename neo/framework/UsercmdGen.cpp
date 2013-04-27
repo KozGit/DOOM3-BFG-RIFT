@@ -1061,6 +1061,9 @@ void idUsercmdGenLocal::MakeCurrent() {
 	} else {
 		mouseDx = 0;
 		mouseDy = 0;
+
+		// get head tracker angles
+		MotionSensorMove();
 	}
 
 
