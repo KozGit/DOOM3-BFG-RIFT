@@ -182,6 +182,7 @@
     <ClInclude Include="framework\Zip.h" />
     <ClInclude Include="sys\win32\in_motion_sensor.h" />
     <ClInclude Include="sys\win32\MahonyAHRS.h" />
+    <ClInclude Include="sys\win32\vr920.h" />
     <ClInclude Include="sys\win32\win_nanoafx.h" />
     <ClInclude Include="renderer\AutoRender.h" />
     <ClInclude Include="renderer\AutoRenderBink.h" />
@@ -490,6 +491,7 @@
     <ClCompile Include="sys\sys_voicechat.cpp" />
     <ClCompile Include="sys\win32\in_motion_sensor.cpp" />
     <ClCompile Include="sys\win32\MahonyAHRS.cpp" />
+    <ClCompile Include="sys\win32\vr920.cpp" />
     <ClCompile Include="sys\win32\win_achievements.cpp" />
     <ClCompile Include="sys\win32\win_cpu.cpp" />
     <ClCompile Include="sys\win32\win_glimp.cpp" />

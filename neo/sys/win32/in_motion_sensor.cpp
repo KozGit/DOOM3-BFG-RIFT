@@ -16,6 +16,18 @@
 
 #ifdef WIN32
 #include <windows.h>
+
+// VR920 stuff
+#include "vr920.h"
+PVUZIX_DWORD IWROpenTracker = NULL;
+PVUZIX_LONG3 IWRGetTracking = NULL;
+PVUZIX_VOID IWRZeroSet = NULL;
+PVUZIX_DWORD IWRBeginCalibrate = NULL;
+PVUZIX_BOOL IWREndCalibrate = NULL;
+PVUZIX_BOOL IWRSetFilterState = NULL;
+PVUZIX_VOID IWRCloseTracker = NULL;
+bool hasVR920Tracker = false;
+
 #include "../../../dependencies/OculusSDK/include/OVR.h"
 using namespace OVR;
 
@@ -42,6 +54,54 @@ void VRPN_CALLBACK handle_tracker(void* userData, const vrpn_TRACKERCB t )
 {
 	double euler[3];
 	q_to_euler((double *)t.quat, euler);
+}
+
+HMODULE iwrdrv_dll = NULL;
+static void LoadVR920(void) 
+{
+	hasVR920Tracker = false;
+	if (!iwrdrv_dll) {
+		iwrdrv_dll = LoadLibrary( "IWEARDRV.DLL" );
+		if (iwrdrv_dll) {
+			IWROpenTracker = (PVUZIX_DWORD)GetProcAddress(iwrdrv_dll, "IWROpenTracker");
+			IWRGetTracking = (PVUZIX_LONG3)GetProcAddress(iwrdrv_dll, "IWRGetTracking");
+			IWRZeroSet = (PVUZIX_VOID)GetProcAddress(iwrdrv_dll, "IWRZeroSet");
+			IWRBeginCalibrate = (PVUZIX_DWORD)GetProcAddress(iwrdrv_dll, "IWRBeginCalibrate");
+			IWREndCalibrate = (PVUZIX_BOOL)GetProcAddress(iwrdrv_dll, "IWREndCalibrate");
+			IWRSetFilterState = (PVUZIX_BOOL)GetProcAddress(iwrdrv_dll, "IWRSetFilterState");
+			IWRCloseTracker = (PVUZIX_VOID)GetProcAddress(iwrdrv_dll, "IWRCloseTracker");
+		} else {
+			IWROpenTracker = NULL;
+			IWRGetTracking = NULL;
+			IWRZeroSet = NULL;
+			IWRBeginCalibrate = NULL;
+			IWREndCalibrate = NULL;
+			IWRSetFilterState = NULL;
+			IWRCloseTracker = NULL;
+			common->Warning("Vuzix VR920 tracker driver not installed.\n");
+		}
+	}
+	if ((!hasVR920Tracker) && IWROpenTracker && IWROpenTracker()==ERROR_SUCCESS) {
+		hasVR920Tracker = true;
+		common->Printf("VR920 head tracker started.\n");
+	}
+}
+
+void FreeVR920(void) 
+{
+	hasVR920Tracker = false;
+	if (iwrdrv_dll) {
+		if (IWRCloseTracker)
+			IWRCloseTracker();
+		FreeLibrary(iwrdrv_dll);
+	}
+	IWROpenTracker = NULL;
+	IWRGetTracking = NULL;
+	IWRZeroSet = NULL;
+	IWRBeginCalibrate = NULL;
+	IWREndCalibrate = NULL;
+	IWRSetFilterState = NULL;
+	IWRCloseTracker = NULL;
 }
 
 void IN_MotionSensor_Init(void)
@@ -84,7 +144,9 @@ void IN_MotionSensor_Init(void)
 
 	if (pSensor)
 		SFusion.AttachToSensor(pSensor);
-
+	
+	if (!pSensor)
+		LoadVR920();
 
 	//Hillcrest libfreespace stuff
 	LPDWORD dwThreadId=0;
@@ -194,6 +256,13 @@ void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 			roll =   -RADIANS_TO_DEGREES(r); // ???
 			pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
 			yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
+		} else if (hasVR920Tracker && IWRGetTracking) {
+			LONG y=0, p=0, r=0;
+			if (IWRGetTracking(&y, &p, &r)==ERROR_SUCCESS) {
+				yaw = y * 180.0f/32767.0f;
+				pitch = p * -180.0f/32767.0f;
+				roll = r * 180.0f/32767.0f;
+			}
 		} else {
 			roll  = angles[ROLL];
 			pitch = angles[PITCH];

@@ -542,6 +542,7 @@
     </ClInclude>
     <ClInclude Include="sys\win32\in_motion_sensor.h" />
     <ClInclude Include="sys\win32\MahonyAHRS.h" />
+    <ClInclude Include="sys\win32\vr920.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cm\CollisionModel_contacts.cpp">
@@ -1143,6 +1144,7 @@
     </ClCompile>
     <ClCompile Include="sys\win32\in_motion_sensor.cpp" />
     <ClCompile Include="sys\win32\MahonyAHRS.cpp" />
+    <ClCompile Include="sys\win32\vr920.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sys\win32\rc\res\doom.ico">
