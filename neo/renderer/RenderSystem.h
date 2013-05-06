@@ -49,6 +49,10 @@ enum stereo3DMode_t {
 
 	STEREO3D_INTERLACED,
 
+	// Vuzix/Icuiti VR920, with updated firmware, freezeframe 3D mode
+	// alternates frames for each eye, with a USB signal saying which eye it is for
+	STEREO3D_VR920,
+
 	// OpenGL quad buffer
 	STEREO3D_QUAD_BUFFER,
 

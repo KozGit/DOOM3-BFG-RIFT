@@ -1681,6 +1681,7 @@ void GfxInfo_f( const idCmdArgs &args ) {
 		case STEREO3D_HDMI_720:					idLib::Printf( "STEREO3D_HDMI_720\n" ); break;
 		case STEREO3D_INTERLACED:				idLib::Printf( "STEREO3D_INTERLACED\n" ); break;
 		case STEREO3D_QUAD_BUFFER:				idLib::Printf( "STEREO3D_QUAD_BUFFER\n" ); break;
+		case STEREO3D_VR920:					idLib::Printf( "STEREO3D_VR920\n" ); break;
 		default:idLib::Printf( "Unknown (%i)\n", renderSystem->GetStereo3DMode() ); break;
 	}
 

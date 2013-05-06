@@ -31,6 +31,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "../tr_local.h"
 #include "../../framework/Common_local.h"
+#include "../../sys/win32/vr920.h"
 
 idCVar r_drawFlickerBox( "r_drawFlickerBox", "0", CVAR_RENDERER | CVAR_BOOL, "visual test for dropping frames" );
 idCVar stereoRender_warp( "stereoRender_warp", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_BOOL, "use the optical warping renderprog instead of stereoDeGhost" );
@@ -326,7 +327,10 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 
 	renderProgManager.BindShader_Texture();
 	GL_Color( 1, 1, 1, 1 );
-
+	static stereo3DMode_t old3Dmode = STEREO3D_OFF;
+	if (old3Dmode == STEREO3D_VR920 && renderSystem->GetStereo3DMode()!=STEREO3D_VR920) {
+		VR920_StopStereo3D();
+	}
 	switch( renderSystem->GetStereo3DMode() ) {
 	case STEREO3D_QUAD_BUFFER:
 		glDrawBuffer( GL_BACK_RIGHT );
@@ -477,7 +481,32 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 		qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 
 		break;
+
+	case STEREO3D_VR920:
+		if (old3Dmode!=STEREO3D_VR920)
+			VR920_StartStereo3D();
+		static int vr920eye = 0;
+		if (!vr920eye && (vr920StereoHandle!=INVALID_HANDLE_VALUE)) {
+			IWRSTEREO_SetLR(vr920StereoHandle, 0);
+			GL_SelectTexture( 0 );
+			stereoRenderImages[0]->Bind();
+			GL_SelectTexture( 1 );
+			stereoRenderImages[1]->Bind();
+			GL_ViewportAndScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
+			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
+		} else {
+			IWRSTEREO_SetLR(vr920StereoHandle, 1);
+			GL_SelectTexture( 0 );
+			stereoRenderImages[1]->Bind();
+			GL_SelectTexture( 1 );
+			stereoRenderImages[0]->Bind();
+			GL_ViewportAndScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
+			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
+		}
+		vr920eye = !vr920eye;
+		break;
 	}
+	old3Dmode = renderSystem->GetStereo3DMode();
 
 	// debug tool
 	RB_DrawFlickerBox();
