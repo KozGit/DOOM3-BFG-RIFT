@@ -41,6 +41,7 @@ float angles[3];
 
     // *** Oculus HMD Variables
     
+    idCVar in_sensorPrediction("in_motionSensorPrediction", "50", CVAR_SYSTEM | CVAR_ARCHIVE | CVAR_FLOAT, "motion sensor prediction (ms)");
     Ptr<DeviceManager>  pManager;
     Ptr<SensorDevice>   pSensor;
     Ptr<HMDDevice>      pHMD;
@@ -143,7 +144,10 @@ void IN_MotionSensor_Init(void)
     //    common->Printf("Oculus Sensor detected; HMD display EDID not detected.\n");
 
 	if (pSensor)
+    {
 		SFusion.AttachToSensor(pSensor);
+        SFusion.SetPredictionEnabled(true);
+    }
 	
 	if (!pSensor)
 		LoadVR920();
@@ -246,11 +250,15 @@ void IN_MotionSensor_Thread()
 	}
 }
 
-
 void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 {
 		if (SFusion.IsAttachedToSensor()) {
-			Quatf hmdOrient = SFusion.GetOrientation();
+            float predictionDelta = in_sensorPrediction.GetFloat() * (1.0f / 1000.0f);
+            if (SFusion.GetPredictionDelta() != predictionDelta)
+            {
+                SFusion.SetPrediction(predictionDelta);
+            }
+			Quatf hmdOrient = SFusion.GetPredictedOrientation();
 			float y = 0.0f, p = 0.0f, r = 0.0f;
 			hmdOrient.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
 			roll =   -RADIANS_TO_DEGREES(r); // ???
