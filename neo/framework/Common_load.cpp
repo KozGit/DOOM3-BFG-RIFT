@@ -415,7 +415,7 @@ void idCommonLocal::ExecuteMapChange() {
 	// ensure that r_znear is reset to the default value
 	// this fixes issues with the projection matrix getting messed up when switching maps or loading a saved game
 	// while an in-game cinematic is playing.
-	cvarSystem->SetCVarFloat( "r_znear", 3.0f );
+	cvarSystem->SetCVarFloat( "r_znear", 1.0f );
 
 	// reset all cheat cvars for a multiplayer game
 	if ( IsMultiplayer() ) {

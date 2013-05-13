@@ -99,6 +99,9 @@ void idMenuScreen_Shell_PressStart::Initialize( idMenuHandler * data ) {
 	doomCover = declManager->FindMaterial( "guis/assets/mainmenu/doom_cover.tga" );
 	doom2Cover = declManager->FindMaterial( "guis/assets/mainmenu/doom2_cover.tga" );
 	doom3Cover = declManager->FindMaterial( "guis/assets/mainmenu/doom3_cover.tga" );
+	doom64Cover = declManager->FindMaterial( "doom64.tga" );
+	doomRPGCover = declManager->FindMaterial( "doomrpg.tga" );
+	doom2RPGCover = declManager->FindMaterial( "doom2rpg.tga" );
 
 	startButton = new idMenuWidget_Button();
 	startButton->SetSpritePath( GetSpritePath(), "info", "btnStart" );
@@ -163,6 +166,9 @@ void idMenuScreen_Shell_PressStart::ShowScreen( const mainMenuTransition_t trans
 			coverIcons.Append( doomCover );
 			coverIcons.Append( doom3Cover );
 			coverIcons.Append( doom2Cover );
+			coverIcons.Append( doom64Cover );
+			coverIcons.Append( doomRPGCover );
+			coverIcons.Append( doom2RPGCover );
 
 			if ( itemList != NULL ) {
 				itemList->SetListImages( coverIcons );

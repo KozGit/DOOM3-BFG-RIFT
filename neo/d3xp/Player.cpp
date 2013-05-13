@@ -1860,15 +1860,20 @@ void idPlayer::Spawn() {
 	// init the damage effects
 	playerView.SetPlayerEntity( this );
 
-	// supress model in non-player views, but allow it in mirrors and remote views
-	renderEntity.suppressSurfaceInViewID = entityNumber+1;
+	if (pm_showBody.GetBool()) {
+		//Carl: don't suppress drawing the player's body in 1st person if we want to see it (in VR)
+		renderEntity.suppressSurfaceInViewID = 0;
+	} else {
+		// supress model in non-player views, but allow it in mirrors and remote views
+		renderEntity.suppressSurfaceInViewID = entityNumber+1;
+	}
 
 	// don't project shadow on self or weapon
 	renderEntity.noSelfShadow = true;
 
 	idAFAttachment *headEnt = head.GetEntity();
 	if ( headEnt ) {
-		headEnt->GetRenderEntity()->suppressSurfaceInViewID = entityNumber+1;
+		headEnt->GetRenderEntity()->suppressSurfaceInViewID = entityNumber+1; //Carl: We still suppress the head with pm_showBody in 1st person
 		headEnt->GetRenderEntity()->noSelfShadow = true;
 	}
 
@@ -6967,9 +6972,16 @@ void idPlayer::Move_Interpolated( float fraction ) {
 	} else if ( health <= 0 ) {
 		newEyeOffset = pm_deadviewheight.GetFloat();
 	} else if ( physicsObj.IsCrouching() ) {
-		newEyeOffset = pm_crouchviewheight.GetFloat();
+		if (pm_showBody.GetBool()) {
+			newEyeOffset = 34; //Carl: When showing our body, our body doesn't crouch enough, so move eyes as high as possible (any higher and the top of our head wouldn't fit)
+		} else {
+			newEyeOffset = pm_crouchviewheight.GetFloat();
+		}
 	} else if ( GetBindMaster() && GetBindMaster()->IsType( idAFEntity_Vehicle::Type ) ) {
 		newEyeOffset = 0.0f;
+	} else if (pm_showBody.GetBool()) {
+		newEyeOffset = pm_normalviewheight.GetFloat(); 
+		//Carl: Our body is too tall, so move our eyes higher so they don't clip the body
 	} else {
 		newEyeOffset = pm_normalviewheight.GetFloat();
 	}
@@ -7076,9 +7088,16 @@ void idPlayer::Move() {
 	} else if ( health <= 0 ) {
 		newEyeOffset = pm_deadviewheight.GetFloat();
 	} else if ( physicsObj.IsCrouching() ) {
-		newEyeOffset = pm_crouchviewheight.GetFloat();
+		if (pm_showBody.GetBool()) {
+			newEyeOffset = 34; //Carl: When showing our body, our body doesn't crouch enough, so move eyes as high as possible (any higher and the top of our head wouldn't fit)
+		} else {
+			newEyeOffset = pm_crouchviewheight.GetFloat();
+		}
 	} else if ( GetBindMaster() && GetBindMaster()->IsType( idAFEntity_Vehicle::Type ) ) {
 		newEyeOffset = 0.0f;
+	} else if (pm_showBody.GetBool()) {
+		newEyeOffset = pm_normalviewheight.GetFloat(); 
+		//Carl: Our body is too tall, so move our eyes higher so they don't clip the body
 	} else {
 		newEyeOffset = pm_normalviewheight.GetFloat();
 	}
@@ -8962,12 +8981,69 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 
 	// if dead, fix the angle and don't add any kick
 	if ( health <= 0 ) {
-		angles.yaw = viewAngles.yaw;
-		angles.roll = 40;
-		angles.pitch = -15;
+		angles = viewAngles;
+		//angles.yaw = viewAngles.yaw;
+		//angles.roll = 40; //Carl:Never roll the camera in VR unless the user does!
+		//angles.pitch = -15; //Carl:Probably not a good idea to pitch either
 		axis = angles.ToMat3();
 		origin = GetEyePosition();
 	} else {
+		//Carl: Use head and neck rotation model
+		float eyeHeightAboveRotationPoint;
+		float eyeShiftRight = 0;
+		//Carl: When we can see our body, it leans from the torso, not the neck!
+		if (pm_showBody.GetBool()) {
+			// with different weapons, we pivot from a different place
+			if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/fists_new.tga") {
+				eyeHeightAboveRotationPoint = 12.5f;
+				eyeShiftRight = -4;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/chainsaw_new.tga") {
+				eyeHeightAboveRotationPoint = 13;
+				eyeShiftRight = 2;
+			} else if (weapon && weapon->displayName=="#str_00100207") { // grabber
+				eyeHeightAboveRotationPoint = 10;
+				eyeShiftRight = 1;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/soul_cube.tga") {
+				eyeHeightAboveRotationPoint = 10;
+				eyeShiftRight = -1;
+			} else if (weapon && weapon->displayName=="#str_00100209") { // artifact
+				eyeHeightAboveRotationPoint = 10;
+				eyeShiftRight = -1;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/pistol_new.tga") {
+				eyeHeightAboveRotationPoint = 15;
+				eyeShiftRight = 0;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/shotgun_new.tga") {
+				eyeHeightAboveRotationPoint = 23;
+				eyeShiftRight = 2;
+			} else if (weapon && weapon->displayName=="#str_00100191") { // double-barrelled shotgun
+				eyeHeightAboveRotationPoint = 23;
+				eyeShiftRight = 2;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/machinegun_new.tga") {
+				eyeHeightAboveRotationPoint = 17;
+				eyeShiftRight = 0;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/chaingun_new.tga") {
+				eyeHeightAboveRotationPoint = 12;
+				eyeShiftRight = 6;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/grenade_new.tga") {
+				eyeHeightAboveRotationPoint = 15;
+				eyeShiftRight = 0;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/plasmagun_new.tga") {
+				eyeHeightAboveRotationPoint = 6;
+				eyeShiftRight = 2;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/rocketlauncher_new.tga") {
+				eyeHeightAboveRotationPoint = 20;
+				eyeShiftRight = 1;
+			} else if (weapon && weapon->pdaIcon=="guis/assets/hud/icons/bfg_new.tga") {
+				eyeHeightAboveRotationPoint = 21;
+				eyeShiftRight = 5;
+			} else {
+				eyeHeightAboveRotationPoint = 14;
+				eyeShiftRight = 0;
+			}
+		} else {
+			eyeHeightAboveRotationPoint = g_viewNodalZ.GetFloat();
+		}
+
 		origin = GetEyePosition() + viewBob;
 		angles = viewAngles + viewBobAngles + playerView.AngleOffset();
 
@@ -8978,7 +9054,7 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 		origin += gravityVector * g_viewNodalZ.GetFloat();
 
 		// adjust the origin based on the camera nodal distance (eye distance from neck)
-		origin += axis[0] * g_viewNodalX.GetFloat() + axis[2] * g_viewNodalZ.GetFloat();
+		origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2]*eyeHeightAboveRotationPoint;
 	}
 }
 

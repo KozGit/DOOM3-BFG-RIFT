@@ -1184,8 +1184,8 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 		fileSystem->EndLevelLoad();
 
 		// Initialize support for Doom classic.
-		doomClassicMaterial = declManager->FindMaterial( "_doomClassic" );
-		idImage *image = globalImages->GetImage( "_doomClassic" );
+		doomClassicMaterial = declManager->FindMaterial( "_CarlClassic" );
+		idImage *image = globalImages->GetImage( "_CarlClassic" );
 		if ( image != NULL ) {
 			idImageOpts opts;
 			opts.format = FMT_RGBA8;

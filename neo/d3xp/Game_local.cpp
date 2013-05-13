@@ -4212,7 +4212,7 @@ void idGameLocal::SetCamera( idCamera *cam ) {
 		inCinematic = false;
 
 		// restore r_znear
-		cvarSystem->SetCVarFloat( "r_znear", 3.0f );
+		cvarSystem->SetCVarFloat( "r_znear", 1.0f );
 
 		// show all the player models
 		for( i = 0; i < numClients; i++ ) {

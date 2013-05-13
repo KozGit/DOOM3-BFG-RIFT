@@ -743,6 +743,6 @@ void idCommonLocal::RunDoomClassicFrame() {
 		}
 	}
 
-	renderSystem->UploadImage( "_doomClassic", doomClassicImageData.Ptr(), DOOMCLASSIC_RENDERWIDTH, DOOMCLASSIC_RENDERHEIGHT );
+	renderSystem->UploadImage( "_CarlClassic", doomClassicImageData.Ptr(), DOOMCLASSIC_RENDERWIDTH, DOOMCLASSIC_RENDERHEIGHT );
 	doomTics++;
 }

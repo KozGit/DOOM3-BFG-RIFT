@@ -352,6 +352,9 @@ public:
 		itemList( NULL ),
 		doomCover( NULL ),
 		doom2Cover( NULL ),
+		doom64Cover( NULL ),
+		doomRPGCover( NULL ),
+		doom2RPGCover( NULL ),
 		doom3Cover( NULL ) {
 	}
 	virtual void				Initialize( idMenuHandler * data );
@@ -366,6 +369,9 @@ private:
 	const idMaterial *			doomCover;
 	const idMaterial *			doom2Cover;
 	const idMaterial *			doom3Cover;
+	const idMaterial *			doom64Cover;
+	const idMaterial *			doomRPGCover;
+	const idMaterial *			doom2RPGCover;
 };
 
 //*
@@ -381,6 +387,9 @@ public:
 		itemList( NULL ),
 		doomCover( NULL ),
 		doom2Cover( NULL ),
+		doom64Cover( NULL ),
+		doomRPGCover( NULL ),
+		doom2RPGCover( NULL ),
 		doom3Cover( NULL ) {
 	}
 	virtual void				Initialize( idMenuHandler * data );
@@ -395,6 +404,9 @@ private:
 	const idMaterial *			doomCover;
 	const idMaterial *			doom2Cover;
 	const idMaterial *			doom3Cover;
+	const idMaterial *			doom64Cover;
+	const idMaterial *			doomRPGCover;
+	const idMaterial *			doom2RPGCover;
 };
 
 //*
