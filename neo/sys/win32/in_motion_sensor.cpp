@@ -28,7 +28,7 @@ PVUZIX_BOOL IWRSetFilterState = NULL;
 PVUZIX_VOID IWRCloseTracker = NULL;
 bool hasVR920Tracker = false;
 
-#include "../../../dependencies/OculusSDK/include/OVR.h"
+#include "OVR.h"
 using namespace OVR;
 
 #define RADIANS_TO_DEGREES(rad) ((float) rad * (float) (180.0 / idMath::PI))

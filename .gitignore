@@ -170,3 +170,7 @@ pip-log.txt
 [Rr]etail/
 *.tlog
 *.log
+LibOVR
+/neo/extract_sound
+/neo/extract
+/neo/extract_common
