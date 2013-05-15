@@ -6072,7 +6072,7 @@ void idPlayer::UpdateViewAngles() {
 	}
 
 	// if dead
-	if ( health <= 0 ) {
+	if ( health <= 0 && false) { //Carl: never roll or they'll get sick! Also don't steal control.
 		if ( pm_thirdPersonDeath.GetBool() ) {
 			viewAngles.roll = 0.0f;
 			viewAngles.pitch = 30.0f;
@@ -7751,7 +7751,11 @@ void idPlayer::Think() {
 	} else {
 		renderEntity.suppressShadowInViewID	= entityNumber+1;
 		if ( headRenderEnt ) {
-			headRenderEnt->suppressShadowInViewID = entityNumber+1;
+			if (pm_showBody.GetBool()) {
+				headRenderEnt->suppressShadowInViewID = 0; //Carl:Draw the head's shadow when showing the body (not working)
+			} else {
+				headRenderEnt->suppressShadowInViewID = entityNumber+1;
+			}
 		}
 	}
 	// never cast shadows from our first-person muzzle flashes
@@ -9855,7 +9859,11 @@ void idPlayer::ClientThink( const int curTime, const float fraction, const bool 
 	} else {
 		renderEntity.suppressShadowInViewID	= entityNumber+1;
 		if ( headRenderEnt ) {
-			headRenderEnt->suppressShadowInViewID = entityNumber+1;
+			if (pm_showBody.GetBool()) {
+				headRenderEnt->suppressShadowInViewID = 0; //Carl:Draw the head's shadow when showing the body
+			} else {
+				headRenderEnt->suppressShadowInViewID = entityNumber+1;
+			}
 		}
 	}
 	// never cast shadows from our first-person muzzle flashes
