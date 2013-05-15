@@ -14,6 +14,8 @@
 #include <string.h>
 #include <math.h>
 
+bool hasHMD = false, hasOculusRift = false, hasHillcrest = false, hasVR920Tracker = false;
+
 #ifdef WIN32
 #include <windows.h>
 
@@ -26,7 +28,6 @@ PVUZIX_DWORD IWRBeginCalibrate = NULL;
 PVUZIX_BOOL IWREndCalibrate = NULL;
 PVUZIX_BOOL IWRSetFilterState = NULL;
 PVUZIX_VOID IWRCloseTracker = NULL;
-bool hasVR920Tracker = false;
 
 #include "OVR.h"
 using namespace OVR;
@@ -107,6 +108,8 @@ void FreeVR920(void)
 
 void IN_MotionSensor_Init(void)
 {
+	//Carl: Don't initialize has* here to false, because they can also be set by command line parameters
+
 	// *** Oculus Sensor Initialization
 	OVR::System::Init(OVR::Log::ConfigureDefaultLog(OVR::LogMask_All));
 
@@ -147,10 +150,13 @@ void IN_MotionSensor_Init(void)
     {
 		SFusion.AttachToSensor(pSensor);
         SFusion.SetPredictionEnabled(true);
+		hasOculusRift = true;
+		hasHMD = true;
     }
 	
 	if (!pSensor)
 		LoadVR920();
+	hasHMD = hasHMD || hasVR920Tracker;
 
 	//Hillcrest libfreespace stuff
 	LPDWORD dwThreadId=0;
@@ -202,6 +208,8 @@ void IN_MotionSensor_Init(void)
 		0, //Immediately run the thread
 		dwThreadId //Thread Id
 		);
+	hasHillcrest = true;
+	hasHMD = true;
 }
 
 void IN_MotionSensor_Thread()

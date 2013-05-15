@@ -1132,8 +1132,6 @@ idUsercmdGenLocal::Init
 */
 void idUsercmdGenLocal::Init() {
 	initialized = true;
-
-	IN_MotionSensor_Init();
 }
 
 /*
