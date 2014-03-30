@@ -60,10 +60,13 @@ typedef struct {
 	idImage*			imageY;
 	idImage*			imageCr;
 	idImage*			imageCb;
+	idImage*			image;
 	int					status;
 } cinData_t;
 
 class idCinematic {
+public:
+	bool isRoQ; 
 public:
 	// initialize cinematic play back data
 	static void			InitCinematic( void );
@@ -74,6 +77,9 @@ public:
 	// allocates and returns a private subclass that implements the methods
 	// This should be used instead of new
 	static idCinematic	*Alloc();
+
+	// constructor
+	idCinematic();
 
 	// frees all allocated memory
 	virtual				~idCinematic();

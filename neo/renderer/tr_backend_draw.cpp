@@ -355,8 +355,15 @@ static void RB_BindVariableStageImage( const textureStage_t *texture, const floa
 			cin.imageCr->Bind();
 			GL_SelectTexture( 2 );
 			cin.imageCb->Bind();
+		//Carl: A single RGB image works better with the FFMPEG BINK codec.
+		} else if ( cin.image != NULL ) {
+			GL_SelectTexture( 0 );
+			cin.image->Bind();
+			renderProgManager.BindShader_TextureVertexColor();
 		} else {
-			globalImages->blackImage->Bind();
+			//Carl: This is where the Open Source version of Doom 3 BFG normally draws it's bink cinematic clips, because the cinematic doesn't return any images
+			//globalImages->blackImage->Bind();
+			globalImages->whiteImage->Bind();
 			// because the shaders may have already been set - we need to make sure we are not using a bink shader which would 
 			// display incorrectly.  We may want to get rid of RB_BindVariableStageImage and inline the code so that the
 			// SWF GUI case is handled better, too
@@ -2031,6 +2038,7 @@ static int RB_DrawShaderPasses( const drawSurf_t * const * const drawSurfs, cons
 			//--------------------------
 			//
 			// old style stages
+			// Carl: Including BINK cinematic videos
 			//
 			//--------------------------
 
@@ -2099,6 +2107,7 @@ static int RB_DrawShaderPasses( const drawSurf_t * const * const drawSurfs, cons
 			RB_SetVertexColorParms( svc );
 
 			// bind the texture
+			//Carl: (which may be a BINK cinematic)
 			RB_BindVariableStageImage( &pStage->texture, regs );
 
 			// set privatePolygonOffset if necessary

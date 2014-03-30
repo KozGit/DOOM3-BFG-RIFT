@@ -97,10 +97,10 @@
     <Link>
       <GenerateDebugInformation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateDebugInformation>
       <GenerateDebugInformation Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">true</GenerateDebugInformation>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovr.lib;quat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovr.lib;avcodec-55.lib;avdevice-55.lib;avfilter-3.lib;avformat-55.lib;avutil-52.lib;postproc-52.lib;swresample-0.lib;swscale-2.lib;libfreespace.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovr.lib;quat.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\Release\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;..\dependencies\ffmpeg32\libVS2010\;..\dependencies\libfreespace\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\Release\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;..\dependencies\ffmpeg32\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <Deploy />
     <Deploy />
@@ -109,14 +109,14 @@
     <ClCompile />
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</TreatWarningAsError>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_INLINEDEBUG;VRPN_CLIENT_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</TreatWarningAsError>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">true</TreatWarningAsError>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavutil\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">NDEBUG;%(PreprocessorDefinitions);ID_RETAIL</PreprocessorDefinitions>
     </ClCompile>
     <ImageXex />
@@ -138,7 +138,7 @@
     <Link />
     <Link>
       <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovrd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;..\dependencies\ffmpeg32\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">libcmtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
