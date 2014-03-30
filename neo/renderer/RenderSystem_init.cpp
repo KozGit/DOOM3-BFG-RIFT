@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 
 #include "tr_local.h"
+#include "DXT/DXTCodec.h"
 
 // Vista OpenGL wrapper check
 #include "../sys/win32/win_local.h"
@@ -986,6 +987,41 @@ void R_TestImage_f( const idCmdArgs &args ) {
 }
 
 /*
+================
+//Carl: ExtractTGA_f
+================
+*/
+void ExtractTGA_f( const idCmdArgs &args ) {
+	idStr		relativePath;
+	idStr		extension;
+	//idFileList *fileList;
+	int			imageNum;
+	idImage	*	img = NULL;
+	//idDxtDecoder dxt;
+
+	if ( args.Argc() != 2 ) {
+		common->Printf( "usage: ExtractTGA <image path or image number>\n" );
+		return;
+	}
+
+	if ( idStr::IsNumeric( args.Argv(1) ) ) {
+		imageNum = atoi( args.Argv(1) );
+		if ( imageNum >= 0 && imageNum < globalImages->images.Num() ) {
+			img = globalImages->images[imageNum];
+		}
+	} else {
+		img = globalImages->ImageFromFile( args.Argv( 1 ), TF_DEFAULT, TR_REPEAT, TD_DEFAULT );
+	}
+	if (!img) {
+		common->Warning( "Image '%s' not found.\n", args.Argv( 1 ) );
+		return;
+	}
+	img->ActuallySaveImage();
+}
+
+
+
+/*
 =============
 R_TestVideo_f
 
@@ -1883,6 +1919,7 @@ void R_InitCommands() {
 	cmdSystem->AddCommand( "gfxInfo", GfxInfo_f, CMD_FL_RENDERER, "show graphics info" );
 	cmdSystem->AddCommand( "modulateLights", R_ModulateLights_f, CMD_FL_RENDERER | CMD_FL_CHEAT, "modifies shader parms on all lights" );
 	cmdSystem->AddCommand( "testImage", R_TestImage_f, CMD_FL_RENDERER | CMD_FL_CHEAT, "displays the given image centered on screen", idCmdSystem::ArgCompletion_ImageName );
+	cmdSystem->AddCommand( "extractTGA", ExtractTGA_f, CMD_FL_RENDERER, "extracts texture as TGA file", idCmdSystem::ArgCompletion_ImageName );
 	cmdSystem->AddCommand( "testVideo", R_TestVideo_f, CMD_FL_RENDERER | CMD_FL_CHEAT, "displays the given cinematic", idCmdSystem::ArgCompletion_VideoName );
 	cmdSystem->AddCommand( "reportSurfaceAreas", R_ReportSurfaceAreas_f, CMD_FL_RENDERER, "lists all used materials sorted by surface area" );
 	cmdSystem->AddCommand( "showInteractionMemory", R_ShowInteractionMemory_f, CMD_FL_RENDERER, "shows memory used by interactions" );

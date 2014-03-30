@@ -115,6 +115,7 @@ public:
 	void		SetReferencedOutsideLevelLoad() { referencedOutsideLevelLoad = true; }
 	void		SetReferencedInsideLevelLoad() { levelLoadReferenced = true; }
 	void		ActuallyLoadImage( bool fromBackEnd );
+	void		ActuallySaveImage( );
 	//---------------------------------------------
 	// Platform specific implementations
 	//---------------------------------------------

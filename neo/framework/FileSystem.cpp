@@ -2574,8 +2574,6 @@ void idFileSystemLocal::Startup() {
 	cmdSystem->AddCommand( "extractResourceFile", ExtractResourceFile_f, CMD_FL_SYSTEM, "extracts to the supplied resource file to the supplied path" );
 	cmdSystem->AddCommand( "updateResourceFile", UpdateResourceFile_f, CMD_FL_SYSTEM, "updates or appends the supplied files in the supplied resource file" );
 
-	//cmdSystem->AddCommand( "extractTGA", ExtractTGA_f, CMD_FL_SYSTEM, "extracts texture as TGA file" );
-
 	cmdSystem->AddCommand( "generateResourceCRCs", GenerateResourceCRCs_f, CMD_FL_SYSTEM, "Generates CRC checksums for all the resource files." );
 
 	// print the current search paths
