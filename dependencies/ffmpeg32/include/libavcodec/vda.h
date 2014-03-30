@@ -41,6 +41,12 @@
 
 #include "libavcodec/version.h"
 
+// extra flags not defined in VDADecoder.h
+enum {
+    kVDADecodeInfo_Asynchronous = 1UL << 0,
+    kVDADecodeInfo_FrameDropped = 1UL << 1
+};
+
 /**
  * @defgroup lavc_codec_hwaccel_vda VDA
  * @ingroup lavc_codec_hwaccel
@@ -134,6 +140,17 @@ struct vda_context {
      * - decoding: Set/Unset by libavcodec.
      */
     int                 priv_allocated_size;
+
+    /**
+     * Use av_buffer to manage buffer.
+     * When the flag is set, the CVPixelBuffers returned by the decoder will
+     * be released automatically, so you have to retain them if necessary.
+     * Not setting this flag may cause memory leak.
+     *
+     * encoding: unused
+     * decoding: Set by user.
+     */
+    int                 use_ref_buffer;
 };
 
 /** Create the video decoder. */

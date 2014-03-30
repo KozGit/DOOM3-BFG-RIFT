@@ -50,36 +50,16 @@ extern "C" {
 		#define INT64_C(c) (c ## LL)
 		#define UINT64_C(c) (c ## ULL)
 	#endif		
-//		#include <inttypes.h>
-//        #include <avcodec.h>
-//        #include <avformat.h>
-//        #include <swscale.h>
+		#include <inttypes.h>
+        #include <avcodec.h>
+        #include <avformat.h>
+        #include <swscale.h>
 }
 
-//typedef int (__cdecl *Tavcodec_open2)(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options);
-//Tavcodec_open2 AVcodec_open2 = NULL;
-//typedef void (__cdecl *Tavcodec_register_all)(void);
-//Tavcodec_register_all AVcodec_register_all = NULL;
-//typedef AVFrame * (__cdecl *Tavcodec_frame_alloc)(void);
-//Tavcodec_frame_alloc AVcodec_frame_alloc = NULL;
-//typedef void (__cdecl *Tavcodec_frame_free)(AVFrame **frame);
-//Tavcodec_frame_free AVcodec_frame_free = NULL;
-
-
-//typedef int (__cdecl *Tavformat_find_stream_info)(AVFormatContext *ic, AVDictionary **options);
-//Tavformat_find_stream_info AVformat_find_stream_info = NULL;
-//typedef int (__cdecl *Tavformat_open_input)(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-//Tavformat_open_input AVformat_open_input = NULL;
-//typedef int (__cdecl *Tav_find_best_stream)(AVFormatContext *ic, enum AVMediaType type, int wanted_stream_nb, int related_stream, AVCodec **decoder_ret, int flags);
-//Tav_find_best_stream AV_find_best_stream = NULL;
-//typedef void (__cdecl *Tavformat_close_input)(AVFormatContext **s);
-//Tavformat_close_input AVformat_close_input = NULL;
-//typedef AVFormatContext * (__cdecl *Tavformat_alloc_context)(void);
-//Tavformat_alloc_context AVformat_alloc_context = NULL;
-//typedef void (__cdecl *Tavformat_free_context)(AVFormatContext *s);
-//Tavformat_free_context AVformat_free_context = NULL;
-//typedef void (__cdecl *Tav_register_all)(void);
-//Tav_register_all AV_register_all = NULL;
+#pragma comment(lib, "..\\dependencies\\ffmpeg32\\libVS2010\\avcodec.lib")
+#pragma comment(lib, "..\\dependencies\\ffmpeg32\\libVS2010\\avformat.lib")
+#pragma comment(lib, "..\\dependencies\\ffmpeg32\\libVS2010\\avutil.lib")
+#pragma comment(lib, "..\\dependencies\\ffmpeg32\\libVS2010\\swscale.lib")
 
 HMODULE avcodec_dll=NULL, avformat_dll=NULL;
 
@@ -97,10 +77,11 @@ public:
 
 protected:
 	int video_stream_index;
-//	AVFormatContext *fmt_ctx;
-//	AVFrame *frame;
-//	AVCodec *dec;
-//	AVCodecContext *dec_ctx;
+	AVFormatContext *fmt_ctx;
+	AVFrame *frame, *frame2;
+	AVCodec *dec;
+	AVCodecContext *dec_ctx;
+	SwsContext* img_convert_ctx;
 	idImage *img;
 private:
 	unsigned int			mcomp[256];
@@ -199,47 +180,10 @@ idCinematic::InitCinematic
 ==============
 */
 void idCinematic::InitCinematic( void ) {
-	//Carl: load the ffmpeg dlls
-	//if (!avcodec_dll) {
-	//	avcodec_dll = LoadLibrary( "avcodec-55.dll" );
-	//	if (avcodec_dll) {
-	//		AVcodec_open2 = (Tavcodec_open2)GetProcAddress(avcodec_dll, "avcodec_open2");
-	//		AVcodec_frame_alloc = (Tavcodec_frame_alloc)GetProcAddress(avcodec_dll, "avcodec_frame_alloc");
-	//		AVcodec_frame_free = (Tavcodec_frame_free)GetProcAddress(avcodec_dll, "avcodec_frame_free");
-	//		AVcodec_register_all = (Tavcodec_register_all)GetProcAddress(avcodec_dll, "avcodec_register_all");
-	//	} else {
-	//		AVcodec_open2 = NULL;
-	//		AVcodec_frame_alloc = NULL;
-	//		AVcodec_frame_free = NULL;
-	//		AVcodec_register_all = NULL;
-	//		common->Warning("idCinematic: Couldn't load avcodec-55.dll (of ffmpeg)\n");
-	//	}
-	//}
-	//if (!avformat_dll) {
-	//	avformat_dll = LoadLibrary( "avformat-55.dll" );
-	//	if (avformat_dll) {
-	//		AV_find_best_stream = (Tav_find_best_stream)GetProcAddress(avformat_dll, "av_find_best_stream");
-	//		AVformat_find_stream_info = (Tavformat_find_stream_info)GetProcAddress(avformat_dll, "avformat_find_stream_info");
-	//		AVformat_open_input = (Tavformat_open_input)GetProcAddress(avformat_dll, "avformat_open_input");
-	//		AVformat_close_input = (Tavformat_close_input)GetProcAddress(avformat_dll, "avformat_close_input");
-	//		AVformat_alloc_context = (Tavformat_alloc_context)GetProcAddress(avformat_dll, "avformat_alloc_context");
-	//		AVformat_free_context = (Tavformat_free_context)GetProcAddress(avformat_dll, "avformat_free_context");
-	//		AV_register_all = (Tav_register_all)GetProcAddress(avformat_dll, "av_register_all");
-	//		
-	//	} else {
-	//		AV_find_best_stream = NULL;
-	//		AVformat_find_stream_info = NULL;
-	//		AVformat_open_input = NULL;
-	//		AVformat_close_input = NULL;
-	//		AVformat_alloc_context = NULL;
-	//		AVformat_free_context = NULL;
-	//		AV_register_all = NULL;
-	//		common->Warning("idCinematic: Couldn't load avformat-55.dll (of ffmpeg)\n");
-	//	}
-	//}
 	//Carl: ffmpeg for Bink and regular video files
-//	AVcodec_register_all();
-//	AV_register_all();
+	common->Warning("Loading FFMPEG...\n");
+	avcodec_register_all();
+	av_register_all();
 
 	//Carl: Doom 3 ROQ:
 	float t_ub,t_vr,t_ug,t_vg;
@@ -398,11 +342,13 @@ idCinematicLocal::idCinematicLocal() {
 
 	//Carl: ffmpeg stuff, for bink and normal video files:
 	isRoQ = false;
-	//fmt_ctx = AVformat_alloc_context();
-	//frame = AVcodec_frame_alloc();
-	//dec_ctx = NULL;
-	//fmt_ctx = NULL;
+	fmt_ctx = avformat_alloc_context();
+	frame = avcodec_alloc_frame();
+	frame2 = avcodec_alloc_frame();
+	dec_ctx = NULL;
+	fmt_ctx = NULL;
 	video_stream_index = -1;
+	img_convert_ctx = NULL;
 	//Carl: Original Doom 3 RoQ files:
 	image = NULL;
 	status = FMV_EOF;
@@ -434,8 +380,8 @@ idCinematicLocal::~idCinematicLocal() {
 	Mem_Free( qStatus[1] );
 	qStatus[1] = NULL;
 	//Carl: ffmpeg for bink and other video files:
-	//AVcodec_frame_free(&frame);
-	//AVformat_free_context(fmt_ctx);
+	avcodec_free_frame(&frame);
+	avformat_free_context(fmt_ctx);
 	delete img;
 	img = NULL;
 }
@@ -446,7 +392,7 @@ idCinematicLocal::InitFromFFMPEGFile
 ==============
 */
 bool idCinematicLocal::InitFromFFMPEGFile( const char *qpath, bool amilooping ) {
-//	int ret;
+	int ret;
 	looping = amilooping;
 	startTime = 0;
 	isRoQ = false;
@@ -454,30 +400,63 @@ bool idCinematicLocal::InitFromFFMPEGFile( const char *qpath, bool amilooping ) 
 	CIN_WIDTH  =  DEFAULT_CIN_WIDTH;
 	idStr fullpath = fileSystem->RelativePathToOSPath(qpath, "fs_basepath"); //Carl: //todo: check this!
 
-	//if ((ret = AVformat_open_input(&fmt_ctx, fullpath, NULL, NULL)) < 0) {
-	//	common->Warning("idCinematic: Cannot open FFMPEG video file: '%s', %d\n", qpath, looping);
- //       return false;
- //   }
-	//if ((ret = AVformat_find_stream_info(fmt_ctx, NULL)) < 0) {
- //       common->Warning("idCinematic: Cannot find stream info: '%s', %d\n", qpath, looping);
- //       return false;
- //   }
-	///* select the video stream */
- //   ret = AV_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &dec, 0);
- //   if (ret < 0) {
-	//	common->Warning("idCinematic: Cannot find a video stream in: '%s', %d\n", qpath, looping);
- //       return false;
- //   }
- //   video_stream_index = ret;
- //   dec_ctx = fmt_ctx->streams[video_stream_index]->codec;
-	///* init the video decoder */
- //   if ((ret = AVcodec_open2(dec_ctx, dec, NULL)) < 0) {
-	//	common->Warning("idCinematic: Cannot open video decoder for: '%s', %d\n", qpath, looping);
- //       return false;
- //   }
-	
-	//return true;
-	return false;
+	if ((ret = avformat_open_input(&fmt_ctx, fullpath, NULL, NULL)) < 0) {
+		common->Warning("idCinematic: Cannot open FFMPEG video file: '%s', %d\n", qpath, looping);
+        return false;
+    }
+	if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
+        common->Warning("idCinematic: Cannot find stream info: '%s', %d\n", qpath, looping);
+        return false;
+    }
+	/* select the video stream */
+    ret = av_find_best_stream(fmt_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &dec, 0);
+    if (ret < 0) {
+		common->Warning("idCinematic: Cannot find a video stream in: '%s', %d\n", qpath, looping);
+        return false;
+    }
+    video_stream_index = ret;
+    dec_ctx = fmt_ctx->streams[video_stream_index]->codec;
+	/* init the video decoder */
+    if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
+		common->Warning("idCinematic: Cannot open video decoder for: '%s', %d\n", qpath, looping);
+        return false;
+    }
+
+	common->Warning("Loaded FFMPEG file: '%s', looping=%d\n", qpath, looping);
+	CIN_WIDTH = dec_ctx->width;
+	CIN_HEIGHT = dec_ctx->height;
+    /** Calculate Duration in seconds
+      * This is the fundamental unit of time (in seconds) in terms
+      * of which frame timestamps are represented. For fixed-fps content,
+      * timebase should be 1/framerate and timestamp increments should be
+      * identically 1.
+      * - encoding: MUST be set by user.
+      * - decoding: Set by libavcodec.
+      */
+    AVRational avr = dec_ctx->time_base;
+    /**
+     * For some codecs, the time base is closer to the field rate than the frame rate.
+     * Most notably, H.264 and MPEG-2 specify time_base as half of frame duration
+     * if no telecine is used ...
+     *
+     * Set to time_base ticks per frame. Default 1, e.g., H.264/MPEG-2 set it to 2.
+     */
+    int ticksPerFrame = dec_ctx->ticks_per_frame;
+    float durationSec = static_cast<double>(fmt_ctx->streams[video_stream_index]->duration) * static_cast<double>(ticksPerFrame) / static_cast<double>(avr.den);
+	animationLength = durationSec*1000;
+	frameRate = av_q2d(fmt_ctx->streams[video_stream_index]->r_frame_rate);
+	startTime = 0;
+	buf = NULL;
+	common->Warning("%dx%d, %f FPS, %f sec", CIN_WIDTH, CIN_HEIGHT, frameRate, durationSec);
+	image = (byte *)Mem_Alloc( CIN_WIDTH*CIN_HEIGHT*4*2, TAG_CINEMATIC );
+	avpicture_fill((AVPicture *)frame2, image, PIX_FMT_BGR32, CIN_WIDTH, CIN_HEIGHT);
+	if (img_convert_ctx)
+		sws_freeContext(img_convert_ctx);
+	img_convert_ctx = sws_getContext(dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt, CIN_WIDTH, CIN_HEIGHT, PIX_FMT_BGR32, SWS_BICUBIC, NULL, NULL, NULL);
+	status = FMV_PLAY;
+	ImageForTime( 0 );
+	status = ( looping ) ? FMV_PLAY : FMV_IDLE;
+	return true;
 }
 
 /*
@@ -491,7 +470,7 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 	Close();
 
 	inMemory = 0;
-	animationLength = 12000; //Carl: We can't tell how long an RoQ file is, so say it's 12 seconds
+	animationLength = 15000; //Carl: We can't tell how long an RoQ file is, so say it's 12 seconds
 
 	//Carl: if no folder is specified, look in the video folder
 	if ( strstr( qpath, "/" ) == NULL && strstr( qpath, "\\" ) == NULL ) {
@@ -513,13 +492,14 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 	//Carl: If the RoQ file doesn't exist, try using ffmpeg instead:
 	if ( !iFile ) {
 		idLib::Warning("Original Doom 3 RoQ Cinematic not found: '%s'\n", fileName.c_str());
-		fileName = fileName.StripFileExtension();
-		fileName = fileName+"."+ext;
+		idStr temp = fileName.StripFileExtension()+".bik";
 		animationLength = 0;
 		RoQShutdown();
+		fileName = temp;
+		idLib::Warning("New filename: '%s'\n", fileName.c_str());
 
-		return false;
-		//return InitFromFFMPEGFile(fileName, amilooping);
+		//return false;
+		return InitFromFFMPEGFile(fileName.c_str(), amilooping);
 	}
 	//Carl: The rest of this function is for original Doom 3 RoQ files:
 	isRoQ = true;
@@ -568,9 +548,9 @@ void idCinematicLocal::Close() {
 	}
 	RoQShutdown();
 	if (!isRoQ) {
-		//if (dec_ctx)
-		//	avcodec_close(dec_ctx);
-		//AVformat_close_input(&fmt_ctx);
+		if (dec_ctx)
+			avcodec_close(dec_ctx);
+		avformat_close_input(&fmt_ctx);
 		status = FMV_EOF;
 	}
 }
@@ -617,13 +597,13 @@ cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
 		return cinData;
 	}
 
-	if ( status == FMV_EOF || status == FMV_IDLE || !isRoQ ) {
+	if ( status == FMV_EOF || status == FMV_IDLE ) {
 		return cinData;
 	}
 
 	if ( buf == NULL || startTime == -1 ) {
 		if ( startTime == -1 ) {
-			RoQReset();
+			if (isRoQ) RoQReset();
 		}
 		startTime = thisTime;
 	}
@@ -632,6 +612,46 @@ cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
 
 	if ( tfps < 0 ) {
 		tfps = 0;
+	}
+
+	if (!isRoQ) {
+		AVPacket packet;
+		for (int f=0; f<tfps+1; f++) {
+			int frameFinished = 0;
+			while (!frameFinished) { 
+				if (av_read_frame(fmt_ctx, &packet)<0) {
+					// can't read any more, set to EOF
+					status = FMV_EOF;
+					if (looping) {
+						av_seek_frame(fmt_ctx,video_stream_index, 0, 0);
+						if (av_read_frame(fmt_ctx, &packet)<0) {
+							status = FMV_IDLE;
+							return cinData;
+						}
+						status = FMV_PLAY;
+					} else {
+						status = FMV_IDLE;
+						return cinData;
+					}
+				}
+				// Is this a packet from the video stream?
+				if(packet.stream_index==video_stream_index) {
+					// Decode video frame
+					avcodec_decode_video2(dec_ctx, frame, &frameFinished, &packet);
+    			}
+    			// Free the packet that was allocated by av_read_frame
+				av_free_packet(&packet);
+			}
+		}
+		// Did we get a video frame?
+		// Convert the image from its native format to RGB
+		sws_scale(img_convert_ctx, frame->data, frame->linesize, 0, dec_ctx->height, frame2->data, frame2->linesize);
+		cinData.imageWidth = CIN_WIDTH;
+		cinData.imageHeight = CIN_HEIGHT;
+		cinData.status = status;
+		img->UploadScratch(image, CIN_WIDTH, CIN_HEIGHT);
+		cinData.image = img;
+		return cinData;
 	}
 
 	if ( tfps < numQuads ) {
