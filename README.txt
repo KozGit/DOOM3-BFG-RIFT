@@ -1,5 +1,5 @@
-Doom 3 BFG Edition GPL Source Code
-==================================
+Doom 3 BFG VR GPL Source Code
+=============================
 
 This file contains the following sections:
 
@@ -15,7 +15,7 @@ Game data and patching:
 This source release does not contain any game data, the game data is still
 covered by the original EULA and must be obeyed as usual.
 
-You must patch the game to the latest version.
+You should patch the game to the latest version (although it will still work on the first version).
 
 Note that Doom 3 BFG Edition is available from the Steam store at
 http://store.steampowered.com/app/208200/
@@ -42,14 +42,21 @@ any other Steam features.
 Bink:
 -----
 
-The Doom 3 BFG Edition GPL Source Code release does not include functionality for rendering Bink Videos.
+Bink support NOW IS INCLUDED, by using FFMPEG. That means you need the FFMPEG DLLs to run it.
+Download the "shared" package from http://ffmpeg.zeranoe.com/builds/ and extract the dlls
+into your Doom 3 BFG executable directory. If running from Visual Studio, put them in:
+build\win32\debug\ or build\win32\release or build\win32\retail
+If you find the newest version doesn't work, download this version:
+http://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-20140330-git-c01ddf8-win32-shared.7z
+
+The original Doom 3 RoQ cinematic files are also now supported. If present, they will be used
+instead of the bink files. 
 
 
 Back End Rendering of Stencil Shadows:
 --------------------------------------
 
-The Doom 3 BFG Edition GPL Source Code release does not include functionality enabling rendering
-of stencil shadows via the "depth fail" method, a functionality commonly known as "Carmack's Reverse".
+"Carmack's Reverse" depth fail method NOW IS INCLUDED. 
 
 
 Other platforms, updated source code, security issues:

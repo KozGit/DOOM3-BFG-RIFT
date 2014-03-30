@@ -386,6 +386,7 @@ idCinematicLocal::~idCinematicLocal() {
 	qStatus[1] = NULL;
 	//Carl: ffmpeg for bink and other video files:
 	avcodec_free_frame(&frame);
+	avcodec_free_frame(&frame2);
 	avformat_free_context(fmt_ctx);
 	if (img_convert_ctx)
 		sws_freeContext(img_convert_ctx);
