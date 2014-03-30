@@ -71,6 +71,7 @@ public:
 	virtual bool			InitFromFile( const char *qpath, bool looping );
 	virtual bool			InitFromFFMPEGFile( const char *qpath, bool looping );
 	virtual cinData_t		ImageForTime( int milliseconds );
+	virtual cinData_t		ImageForTimeFFMPEG( int milliseconds );
 	virtual int				AnimationLength();
 	virtual void			Close();
 	virtual void			ResetTime(int time);
@@ -82,6 +83,8 @@ protected:
 	AVCodec *dec;
 	AVCodecContext *dec_ctx;
 	SwsContext* img_convert_ctx;
+	bool hasFrame;
+	long FramePos;
 	idImage *img;
 private:
 	unsigned int			mcomp[256];
@@ -142,6 +145,7 @@ private:
 	void					readQuadInfo( byte *qData );
 	void					RoQPrepMcomp( long xoff, long yoff );
 	void					RoQReset();
+	void					FFMPEGReset();
 };
 
 //Carl: ROQ files from original Doom 3
@@ -353,6 +357,7 @@ idCinematicLocal::idCinematicLocal() {
 	image = NULL;
 	status = FMV_EOF;
 	buf = NULL;
+	hasFrame = false;
 	iFile = NULL;
 	img = globalImages->AllocStandaloneImage("_cinematic");
 	if ( img != NULL ) {
@@ -382,6 +387,8 @@ idCinematicLocal::~idCinematicLocal() {
 	//Carl: ffmpeg for bink and other video files:
 	avcodec_free_frame(&frame);
 	avformat_free_context(fmt_ctx);
+	if (img_convert_ctx)
+		sws_freeContext(img_convert_ctx);
 	delete img;
 	img = NULL;
 }
@@ -447,6 +454,8 @@ bool idCinematicLocal::InitFromFFMPEGFile( const char *qpath, bool amilooping ) 
 	frameRate = av_q2d(fmt_ctx->streams[video_stream_index]->r_frame_rate);
 	startTime = 0;
 	buf = NULL;
+	hasFrame = false;
+	FramePos = -1;
 	common->Warning("%dx%d, %f FPS, %f sec", CIN_WIDTH, CIN_HEIGHT, frameRate, durationSec);
 	image = (byte *)Mem_Alloc( CIN_WIDTH*CIN_HEIGHT*4*2, TAG_CINEMATIC );
 	avpicture_fill((AVPicture *)frame2, image, PIX_FMT_BGR32, CIN_WIDTH, CIN_HEIGHT);
@@ -459,6 +468,20 @@ bool idCinematicLocal::InitFromFFMPEGFile( const char *qpath, bool amilooping ) 
 	return true;
 }
 
+
+/*
+==============
+idCinematicLocal::FFMPEGReset
+==============
+*/
+void idCinematicLocal::FFMPEGReset() {
+	startTime = 0;
+	FramePos = -1;
+	av_seek_frame(fmt_ctx,video_stream_index, 0, 0);
+	status = FMV_LOOPED;
+}
+
+
 /*
 ==============
 idCinematicLocal::InitFromFile
@@ -470,7 +493,7 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 	Close();
 
 	inMemory = 0;
-	animationLength = 15000; //Carl: We can't tell how long an RoQ file is, so say it's 12 seconds
+	animationLength = 15000; //Carl: We can't tell how long an RoQ file is, so say it's 15 seconds
 
 	//Carl: if no folder is specified, look in the video folder
 	if ( strstr( qpath, "/" ) == NULL && strstr( qpath, "\\" ) == NULL ) {
@@ -483,9 +506,9 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 	fileName.ExtractFileExtension(ext);
 	fileName = fileName.StripFileExtension();
 	fileName = fileName+".roq";
-	if (fileName == "video\\loadvideo.roq") {
-		fileName = "video\\idlogo.roq";
-	}
+	//if (fileName == "video\\loadvideo.roq") {
+	//	fileName = "video\\idlogo.roq";
+	//}
 
 	iFile = fileSystem->OpenFileRead( fileName );
 
@@ -497,8 +520,6 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 		RoQShutdown();
 		fileName = temp;
 		idLib::Warning("New filename: '%s'\n", fileName.c_str());
-
-		//return false;
 		return InitFromFFMPEGFile(fileName.c_str(), amilooping);
 	}
 	//Carl: The rest of this function is for original Doom 3 RoQ files:
@@ -512,6 +533,7 @@ bool idCinematicLocal::InitFromFile( const char *qpath, bool amilooping ) {
 	samplesPerPixel = 4;
 	startTime = 0;	//Sys_Milliseconds();
 	buf = NULL;
+	hasFrame = false;
 
 	iFile->Read( file, 16 );
 
@@ -546,8 +568,12 @@ void idCinematicLocal::Close() {
 		buf = NULL;
 		status = FMV_EOF;
 	}
+	hasFrame = false;
 	RoQShutdown();
 	if (!isRoQ) {
+		if (img_convert_ctx)
+			sws_freeContext(img_convert_ctx);
+		img_convert_ctx = NULL;
 		if (dec_ctx)
 			avcodec_close(dec_ctx);
 		avformat_close_input(&fmt_ctx);
@@ -580,6 +606,11 @@ idCinematicLocal::ImageForTime
 ==============
 */
 cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
+	//Carl: Handle BFG format BINK videos separately
+	if (!isRoQ) 
+		return ImageForTimeFFMPEG(thisTime);
+
+	//Carl: Handle original Doom 3 RoQ video files
 	cinData_t	cinData;
 
 	if (thisTime==0) {
@@ -603,7 +634,7 @@ cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
 
 	if ( buf == NULL || startTime == -1 ) {
 		if ( startTime == -1 ) {
-			if (isRoQ) RoQReset();
+			RoQReset();
 		}
 		startTime = thisTime;
 	}
@@ -612,46 +643,6 @@ cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
 
 	if ( tfps < 0 ) {
 		tfps = 0;
-	}
-
-	if (!isRoQ) {
-		AVPacket packet;
-		for (int f=0; f<tfps+1; f++) {
-			int frameFinished = 0;
-			while (!frameFinished) { 
-				if (av_read_frame(fmt_ctx, &packet)<0) {
-					// can't read any more, set to EOF
-					status = FMV_EOF;
-					if (looping) {
-						av_seek_frame(fmt_ctx,video_stream_index, 0, 0);
-						if (av_read_frame(fmt_ctx, &packet)<0) {
-							status = FMV_IDLE;
-							return cinData;
-						}
-						status = FMV_PLAY;
-					} else {
-						status = FMV_IDLE;
-						return cinData;
-					}
-				}
-				// Is this a packet from the video stream?
-				if(packet.stream_index==video_stream_index) {
-					// Decode video frame
-					avcodec_decode_video2(dec_ctx, frame, &frameFinished, &packet);
-    			}
-    			// Free the packet that was allocated by av_read_frame
-				av_free_packet(&packet);
-			}
-		}
-		// Did we get a video frame?
-		// Convert the image from its native format to RGB
-		sws_scale(img_convert_ctx, frame->data, frame->linesize, 0, dec_ctx->height, frame2->data, frame2->linesize);
-		cinData.imageWidth = CIN_WIDTH;
-		cinData.imageHeight = CIN_HEIGHT;
-		cinData.status = status;
-		img->UploadScratch(image, CIN_WIDTH, CIN_HEIGHT);
-		cinData.image = img;
-		return cinData;
 	}
 
 	if ( tfps < numQuads ) {
@@ -699,8 +690,89 @@ cinData_t idCinematicLocal::ImageForTime( int thisTime ) {
 	cinData.imageHeight = CIN_HEIGHT;
 	cinData.status = status;
 	img->UploadScratch(image, CIN_WIDTH, CIN_HEIGHT);
-	cinData.image = img;// NULL; //buf; //Carl: //todo:
+	cinData.image = img;
 
+	return cinData;
+}
+
+/*
+==============
+idCinematicLocal::ImageForTimeFFMPEG
+==============
+*/
+cinData_t idCinematicLocal::ImageForTimeFFMPEG( int thisTime ) {
+	cinData_t	cinData;
+
+	if (thisTime<=0) {
+		thisTime = Sys_Milliseconds();
+	}
+
+	memset( &cinData, 0, sizeof(cinData) );
+	if ( r_skipDynamicTextures.GetBool() || status == FMV_EOF || status == FMV_IDLE) {
+		return cinData;
+	}
+
+	if ( (!hasFrame) || startTime == -1 ) {
+		if ( startTime == -1 ) {
+			FFMPEGReset();
+		}
+		startTime = thisTime;
+	}
+
+	long DesiredFrame = ( ( thisTime - startTime ) * frameRate ) / 1000;
+	if (DesiredFrame < 0) DesiredFrame = 0;
+	if (DesiredFrame < FramePos) FFMPEGReset();
+	if (hasFrame && DesiredFrame == FramePos) {
+		cinData.imageWidth = CIN_WIDTH;
+		cinData.imageHeight = CIN_HEIGHT;
+		cinData.status = status;
+		cinData.image = img;
+		return cinData;
+	}
+
+	AVPacket packet;
+	while (FramePos < DesiredFrame) {
+		int frameFinished = 0;
+		//Do a single frame by getting packets until we have a full frame
+		while (!frameFinished) { 
+			//if we got to the end or failed
+			if (av_read_frame(fmt_ctx, &packet)<0) {
+				//can't read any more, set to EOF
+				status = FMV_EOF;
+				if (looping) {
+					DesiredFrame = 0;
+					FFMPEGReset();
+					FramePos=-1;
+					startTime = thisTime;
+					if (av_read_frame(fmt_ctx, &packet)<0) {
+						status = FMV_IDLE;
+						return cinData;
+					}
+					status = FMV_PLAY;
+				} else {
+					status = FMV_IDLE;
+					return cinData;
+				}
+			}
+			// Is this a packet from the video stream?
+			if(packet.stream_index==video_stream_index) {
+				// Decode video frame
+				avcodec_decode_video2(dec_ctx, frame, &frameFinished, &packet);
+    		}
+    		// Free the packet that was allocated by av_read_frame
+			av_free_packet(&packet);
+		}
+		FramePos++;
+	}
+	// We have reached the desired frame
+	// Convert the image from its native format to RGB
+	sws_scale(img_convert_ctx, frame->data, frame->linesize, 0, dec_ctx->height, frame2->data, frame2->linesize);
+	cinData.imageWidth = CIN_WIDTH;
+	cinData.imageHeight = CIN_HEIGHT;
+	cinData.status = status;
+	img->UploadScratch(image, CIN_WIDTH, CIN_HEIGHT);
+	hasFrame = true;
+	cinData.image = img;
 	return cinData;
 }
 
