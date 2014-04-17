@@ -112,14 +112,15 @@
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</TreatWarningAsError>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_INLINEDEBUG;VRPN_CLIENT_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_INLINEDEBUG;VRPN_CLIENT_ONLY;USE_FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</TreatWarningAsError>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">true</TreatWarningAsError>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">NDEBUG;%(PreprocessorDefinitions);ID_RETAIL</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">NDEBUG;USE_FFMPEG;%(PreprocessorDefinitions);ID_RETAIL</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NDEBUG;USE_FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ImageXex />
     <ImageXex />
