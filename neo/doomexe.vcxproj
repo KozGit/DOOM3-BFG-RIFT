@@ -140,8 +140,8 @@
     </Manifest>
     <Link />
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovrd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;..\dependencies\ffmpeg32\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovrd.lib;avcodec.lib;avformat.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\;..\dependencies\ffmpeg32\libVS2010\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">libcmtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
