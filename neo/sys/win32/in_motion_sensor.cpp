@@ -29,7 +29,8 @@ PVUZIX_BOOL IWREndCalibrate = NULL;
 PVUZIX_BOOL IWRSetFilterState = NULL;
 PVUZIX_VOID IWRCloseTracker = NULL;
 
-#include "OVR.h"
+#include "OVR_CAPI.h"
+#include "Kernel/OVR_Math.h"
 using namespace OVR;
 
 #define RADIANS_TO_DEGREES(rad) ((float) rad * (float) (180.0 / idMath::PI))
@@ -43,11 +44,9 @@ float angles[3];
     // *** Oculus HMD Variables
     
     idCVar in_sensorPrediction("in_motionSensorPrediction", "50", CVAR_SYSTEM | CVAR_ARCHIVE | CVAR_FLOAT, "motion sensor prediction (ms)");
-    Ptr<DeviceManager>  pManager;
-    Ptr<SensorDevice>   pSensor;
-    Ptr<HMDDevice>      pHMD;
-    SensorFusion        SFusion;
-//    OVR::HMDInfo        HMDInfo;
+	
+	ovrHmd hmd;
+    ovrHmdDesc hmdDesc;
 
 
 vrpn_Tracker_Remote* vrpnTracker = new vrpn_Tracker_Remote("Tracker0@localhost");
@@ -111,51 +110,37 @@ void IN_MotionSensor_Init(void)
 	//Carl: Don't initialize has* here to false, because they can also be set by command line parameters
 
 	// *** Oculus Sensor Initialization
-	OVR::System::Init(OVR::Log::ConfigureDefaultLog(OVR::LogMask_All));
+	ovr_Initialize();
 
     // Create DeviceManager and first available HMDDevice from it.
     // Sensor object is created from the HMD, to ensure that it is on the
     // correct device.
 
-    pManager = *DeviceManager::Create();
+    //pManager = *DeviceManager::Create();
 
 	// We'll handle it's messages in this case.
 	//pManager->SetMessageHandler(this);
 
     // Release Sensor/HMD in case this is a retry.
-    pSensor.Clear();
-    pHMD.Clear();
-    pHMD  = *pManager->EnumerateDevices<HMDDevice>().CreateDevice();
-    if (pHMD)
+    //pSensor.Clear();
+    //pHMD.Clear();
+	hmd = ovrHmd_Create(0);
+    if (hmd)
     {
-        pSensor = *pHMD->GetSensor();
+        // Get more details about the HMD
+		ovrHmd_GetDesc(hmd, &hmdDesc);
+
+		if (ovrHmd_StartSensor(hmd, ovrHmdCap_Orientation | ovrHmdCap_YawCorrection | ovrHmdCap_Position | ovrHmdCap_LowPersistence, 0)) {
+			hasOculusRift = true;
+			hasHMD = true;
+		}
     }
     else
     {            
-        // If we didn't detect an HMD, try to create the sensor directly.
-        // This is useful for debugging sensor interaction; it is not needed in
-        // a shipping app.
-        pSensor = *pManager->EnumerateDevices<SensorDevice>().CreateDevice();
-    }
-    if (!pHMD && !pSensor)
         common->Warning("Oculus Rift not detected.\n");
-    else if (!pHMD)
-        common->Warning("Oculus Sensor detected; HMD Display not detected.\n");
-    else if (!pSensor)
-        common->Warning("Oculus HMD Display detected; Sensor not detected.\n");
-    //else if (HMDInfo.DisplayDeviceName[0] == '\0')
-    //    common->Printf("Oculus Sensor detected; HMD display EDID not detected.\n");
-
-	if (pSensor)
-    {
-		SFusion.AttachToSensor(pSensor);
-        SFusion.SetPredictionEnabled(true);
-		hasOculusRift = true;
-		hasHMD = true;
-    }
-	
-	if (!pSensor)
 		LoadVR920();
+	}
+
 	hasHMD = hasHMD || hasVR920Tracker;
 
 	//Hillcrest libfreespace stuff
@@ -260,18 +245,19 @@ void IN_MotionSensor_Thread()
 
 void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 {
-		if (SFusion.IsAttachedToSensor()) {
-            float predictionDelta = in_sensorPrediction.GetFloat() * (1.0f / 1000.0f);
-            if (SFusion.GetPredictionDelta() != predictionDelta)
-            {
-                SFusion.SetPrediction(predictionDelta);
-            }
-			Quatf hmdOrient = SFusion.GetPredictedOrientation();
-			float y = 0.0f, p = 0.0f, r = 0.0f;
-			hmdOrient.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
-			roll =   -RADIANS_TO_DEGREES(r); // ???
-			pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
-			yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
+		if (hasOculusRift && hmd) {
+            //float predictionDelta = in_sensorPrediction.GetFloat() * (1.0f / 1000.0f);
+			// Query the HMD for the sensor state at a given time. "0.0" means "most recent time".
+			ovrSensorState ss = ovrHmd_GetSensorState(hmd, 0.0);
+			if (ss.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked))
+			{
+				Posef pose = ss.Predicted.Pose;
+				float y = 0.0f, p = 0.0f, r = 0.0f;
+				pose.Orientation.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
+				roll =   -RADIANS_TO_DEGREES(r); // ???
+				pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
+				yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
+			}
 		} else if (hasVR920Tracker && IWRGetTracking) {
 			LONG y=0, p=0, r=0;
 			if (IWRGetTracking(&y, &p, &r)==ERROR_SUCCESS) {
