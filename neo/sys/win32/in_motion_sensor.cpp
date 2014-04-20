@@ -251,7 +251,7 @@ void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 			ovrSensorState ss = ovrHmd_GetSensorState(hmd, 0.0);
 			if (ss.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked))
 			{
-				Posef pose = ss.Predicted.Pose;
+				Posef pose = ss.Recorded.Pose; // don't use prediction, currently prediction is like random noise.
 				float y = 0.0f, p = 0.0f, r = 0.0f;
 				pose.Orientation.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
 				roll =   -RADIANS_TO_DEGREES(r); // ???
