@@ -802,11 +802,97 @@ void idCommonLocal::RenderBink( const char * path ) {
 	material->Parse( materialText.c_str(), materialText.Length(), false );
 	material->ResetCinematicTime( Sys_Milliseconds() );
 
-	while ( Sys_Milliseconds() <= material->GetCinematicStartTime() + material->CinematicLength() ) {
+	// RB: FFmpeg might return the wrong play length so I changed the intro video to play max 30 seconds until finished
+	int cinematicLength = 30000; //material->CinematicLength();
+	int	mouseEvents[MAX_MOUSE_EVENTS][2];
+	
+	bool escapeEvent = false;
+	while( ( Sys_Milliseconds() <= ( material->GetCinematicStartTime() + cinematicLength ) ) && material->CinematicIsPlaying() )
+	{
 		renderSystem->DrawStretchPic( chop, 0, imageWidth, SCREEN_HEIGHT, 0, 0, 1, 1, material );
 		const emptyCommand_t * cmd = renderSystem->SwapCommandBuffers( &time_frontend, &time_backend, &time_shadows, &time_gpu );
 		renderSystem->RenderCommandBuffers( cmd );
 		Sys_GenerateEvents();
+				
+		// queue system events ready for polling
+		Sys_GetEvent();
+		
+		// RB: allow to escape video by pressing anything
+		int numKeyEvents = Sys_PollKeyboardInputEvents();
+		if( numKeyEvents > 0 )
+		{
+			for( int i = 0; i < numKeyEvents; i++ )
+			{
+				int key;
+				bool state;
+				
+				if( Sys_ReturnKeyboardInputEvent( i, key, state ) )
+				{
+					if( key == K_ESCAPE && state == true )
+					{
+						escapeEvent = true;
+					}
+					break;
+				}
+			}
+			
+			Sys_EndKeyboardInputEvents();
+		}
+		
+		int numMouseEvents = Sys_PollMouseInputEvents( mouseEvents );
+		if( numMouseEvents > 0 )
+		{
+			for( int i = 0; i < numMouseEvents; i++ )
+			{
+				int action = mouseEvents[i][0];
+				switch( action )
+				{
+					case M_ACTION1:
+					case M_ACTION2:
+					case M_ACTION3:
+					case M_ACTION4:
+					case M_ACTION5:
+					case M_ACTION6:
+					case M_ACTION7:
+					case M_ACTION8:
+						escapeEvent = true;
+						break;
+						
+					default:	// some other undefined button
+						break;
+				}
+			}
+		}
+		
+		int numJoystickEvents = Sys_PollJoystickInputEvents( 0 );
+		if( numJoystickEvents > 0 )
+		{
+			for( int i = 0; i < numJoystickEvents; i++ )
+			{
+				int action;
+				int value;
+				
+				if( Sys_ReturnJoystickInputEvent( i, action, value ) )
+				{
+					if( action >= J_ACTION1 && action <= J_ACTION_MAX )
+					{
+						if( value != 0 )
+						{
+							escapeEvent = true;
+							break;
+						}
+					}
+				}
+			}
+			
+			Sys_EndJoystickInputEvents();
+		}
+		
+		if( escapeEvent )
+		{
+			break;
+		}
+		
 		Sys_Sleep( 10 );
 	}
 
