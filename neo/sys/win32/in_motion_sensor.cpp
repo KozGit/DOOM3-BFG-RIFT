@@ -29,8 +29,7 @@ PVUZIX_BOOL IWREndCalibrate = NULL;
 PVUZIX_BOOL IWRSetFilterState = NULL;
 PVUZIX_VOID IWRCloseTracker = NULL;
 
-#include "OVR_CAPI.h"
-#include "Kernel/OVR_Math.h"
+#include "OVR.h"
 using namespace OVR;
 
 #define RADIANS_TO_DEGREES(rad) ((float) rad * (float) (180.0 / idMath::PI))
@@ -46,7 +45,7 @@ float angles[3];
     idCVar in_sensorPrediction("in_motionSensorPrediction", "50", CVAR_SYSTEM | CVAR_ARCHIVE | CVAR_FLOAT, "motion sensor prediction (ms)");
 	
 	ovrHmd hmd;
-    ovrHmdDesc hmdDesc;
+    //ovrHmdDesc hmdDesc; // not used
 
 
 vrpn_Tracker_Remote* vrpnTracker = new vrpn_Tracker_Remote("Tracker0@localhost");
@@ -128,11 +127,20 @@ void IN_MotionSensor_Init(void)
     if (hmd)
     {
         // Get more details about the HMD
-		ovrHmd_GetDesc(hmd, &hmdDesc);
+		//ovrHmd_GetDesc(hmd, &hmdDesc); //not in 0.4.1
 
-		if (ovrHmd_StartSensor(hmd, ovrHmdCap_Orientation | ovrHmdCap_YawCorrection | ovrHmdCap_Position | ovrHmdCap_LowPersistence, 0)) {
+		if ((ovrHmd_ConfigureTracking(hmd, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position | ovrHmdCap_LowPersistence, ovrTrackingCap_Orientation)
+				&& hmd->HmdCaps & ovrHmdCap_ExtendDesktop)) {// make sure rift is running in extended desktop mode
 			hasOculusRift = true;
 			hasHMD = true;
+			common->Printf("Oculus Rift detected!\n");
+		}
+		else {
+			common->Warning("Oculus Rift detected but not used, it lacks some feature(s) required for use or is incorrectly setup!");
+			hasOculusRift = false;
+			hasHMD = false;
+			ovrHmd_Destroy(hmd);
+			ovr_Shutdown();
 		}
     }
     else
@@ -245,19 +253,16 @@ void IN_MotionSensor_Thread()
 
 void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 {
-		if (hasOculusRift && hmd) {
-            //float predictionDelta = in_sensorPrediction.GetFloat() * (1.0f / 1000.0f);
+		if (IN_MotionSensor_CanReadOrientation()) {
 			// Query the HMD for the sensor state at a given time. "0.0" means "most recent time".
-			ovrSensorState ss = ovrHmd_GetSensorState(hmd, 0.0);
-			if (ss.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked))
-			{
-				Posef pose = ss.Recorded.Pose; // don't use prediction, currently prediction is like random noise.
-				float y = 0.0f, p = 0.0f, r = 0.0f;
-				pose.Orientation.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
-				roll =   -RADIANS_TO_DEGREES(r); // ???
-				pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
-				yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
-			}
+			ovrTrackingState ts = ovrHmd_GetTrackingState(hmd, 0.0);
+			ovrPosef pose = ts.HeadPose.ThePose;
+			Quatf orient = pose.Orientation;
+			float y = 0.0f, p = 0.0f, r = 0.0f;
+			orient.GetEulerAngles<Axis_Y, Axis_X, Axis_Z>(&y, &p, &r);
+			roll =   -RADIANS_TO_DEGREES(r); // ???
+			pitch =  -RADIANS_TO_DEGREES(p); // should be degrees down
+			yaw =     RADIANS_TO_DEGREES(y); // should be degrees left
 		} else if (hasVR920Tracker && IWRGetTracking) {
 			LONG y=0, p=0, r=0;
 			if (IWRGetTracking(&y, &p, &r)==ERROR_SUCCESS) {
@@ -271,6 +276,47 @@ void IN_MotionSensor_Read(float &roll, float &pitch, float &yaw)
 			yaw   = angles[YAW];
 		}
 }
+
+bool IN_MotionSensor_CanReadOrientation() {
+	if (hasOculusRift && hmd && (hmd->TrackingCaps & ovrTrackingCap_Orientation)) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+void IN_MotionSensor_ReadPosition(float &x, float &y, float &z) {
+	if (IN_MotionSensor_CanReadPosition()) {
+		ovrTrackingState ts = ovrHmd_GetTrackingState(hmd, 0.0);
+		ovrPosef pose = ts.HeadPose.ThePose;
+		ovrVector3f pos = pose.Position;
+		x = pos.x;
+		y = pos.y;
+		z = pos.z;
+	}
+}
+
+bool IN_MotionSensor_CanReadPosition() {
+	if (hasOculusRift && hmd && (hmd->TrackingCaps & ovrTrackingCap_Position)) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+void IN_MotionSensor_ResetTrackingOrigin() {
+	if (hasOculusRift && hmd) {
+		ovrHmd_RecenterPose(hmd);
+	}
+}
+
+//Console command to reset the oculus tracking origin
+void vr_reset_origin_f(const idCmdArgs &args) {
+	IN_MotionSensor_ResetTrackingOrigin();
+}
+static idCommandLink vr_reset_origin("vr_reset_origin", vr_reset_origin_f, "Resets the Oculus tracking origin");
 
 #else
 void IN_MotionSensor_Init(void){}
