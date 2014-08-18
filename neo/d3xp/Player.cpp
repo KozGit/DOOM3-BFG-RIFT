@@ -33,6 +33,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "../framework/Common_local.h"
 #include "PredictedValue_impl.h"
 
+#include "../sys/win32/in_motion_sensor.h"
+
 idCVar flashlight_batteryDrainTimeMS( "flashlight_batteryDrainTimeMS", "30000", CVAR_INTEGER, "amount of time (in MS) it takes for full battery to drain (-1 == no battery drain)" );
 idCVar flashlight_batteryChargeTimeMS( "flashlight_batteryChargeTimeMS", "3000", CVAR_INTEGER, "amount of time (in MS) it takes to fully recharge battery" );
 idCVar flashlight_minActivatePercent( "flashlight_minActivatePercent", ".25", CVAR_FLOAT, "( 0.0 - 1.0 ) minimum amount of battery (%) needed to turn on flashlight" );
@@ -6790,15 +6792,16 @@ void idPlayer::AdjustBodyAngles() {
 	animator.SetJointAxis( hipJoint, JOINTMOD_WORLD, legsAxis );
 
 	// calculate the blending between down, straight, and up
+	//mmdanggg2: stop the model from bending down and getting in the way!!
 	frac = viewAngles.pitch / 90.0f;
 	if ( frac > 0.0f ) {
-		downBlend		= frac;
-		forwardBlend	= 1.0f - frac;
+		downBlend		= 0.0f;//frac;
+		forwardBlend	= 1.0f;// - frac;
 		upBlend			= 0.0f;
 	} else {
 		downBlend		= 0.0f;
-		forwardBlend	= 1.0f + frac;
-		upBlend			= -frac;
+		forwardBlend	= 1.0f;// + frac;
+		upBlend			= 0.0f;//-frac;
 	}
 
     animator.CurrentAnim( ANIMCHANNEL_TORSO )->SetSyncedAnimWeight( 0, downBlend );
@@ -9057,8 +9060,39 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 		const idVec3 & gravityVector = physicsObj.GetGravityNormal();
 		origin += gravityVector * g_viewNodalZ.GetFloat();
 
+		//mmdanggg2: hooray for positional tracking being a bitch with math and stuff....
+		if (IN_MotionSensor_CanReadPosition()){
+			if (pm_showBody.GetBool()) {
+				eyeHeightAboveRotationPoint = 16.5f;
+			}
+			else {
+				eyeHeightAboveRotationPoint = g_viewNodalZ.GetFloat();
+			}
+			eyeShiftRight = 0;
+			origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2];
+
+			float posTrackx = 0.0f, posTracky = 0.0f, posTrackz = 0.0f, posTrackxAdj = 0.0f, posTrackyAdj = 0.0f;
+			IN_MotionSensor_ReadPosition(posTrackx, posTrackz, posTracky); // Swapped z and y coz oculus returns retarded y=up coords
+
+			double yawRad = DEG2RAD(angles.yaw - 90); // -90deg because then it works
+			double angleCosine = cos(yawRad);
+			double angleSine = sin(yawRad);
+
+			posTracky = -posTracky;// invert the y axis beacuse then it works
+
+			posTrackxAdj = posTrackx * angleCosine - posTracky * angleSine; // rotate the vector so the users pos is aligned with the character
+			posTrackyAdj = posTrackx * angleSine + posTracky * angleCosine;
+
+			idVec3 posTrackVec(posTrackxAdj, posTrackyAdj, posTrackz);
+
+			origin += posTrackVec * 40.0f; // the number is how much the pos tracking affects the view, 40 is a complete guess
+
+			origin.z += eyeHeightAboveRotationPoint; // offset the height so it is on the neck
+		}
+		else {
 		// adjust the origin based on the camera nodal distance (eye distance from neck)
 		origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2]*eyeHeightAboveRotationPoint;
+		}
 	}
 }
 
