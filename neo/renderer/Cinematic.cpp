@@ -38,6 +38,8 @@ extern idCVar s_noSound;
 
 #include "tr_local.h"
 
+#include <stdint.h>
+
 #define CIN_system	1
 #define CIN_loop	2
 #define	CIN_hold	4
