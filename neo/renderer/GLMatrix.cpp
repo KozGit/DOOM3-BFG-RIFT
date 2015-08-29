@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 
 #include "tr_local.h"
+#include "vr\Vr.h" // koz
 
 /*
 ==========================================================================================
@@ -351,16 +352,20 @@ This uses the "infinite far z" trick
 idCVar r_centerX( "r_centerX", "0", CVAR_FLOAT, "projection matrix center adjust" );
 idCVar r_centerY( "r_centerY", "0", CVAR_FLOAT, "projection matrix center adjust" );
 
-void R_SetupProjectionMatrix( viewDef_t *viewDef ) {
+void R_SetupProjectionMatrix( viewDef_t* viewDef )
+{
 	// random jittering is usefull when multiple
 	// frames are going to be blended together
 	// for motion blurred anti-aliasing
 	float jitterx, jittery;
-	if ( r_jitter.GetBool() ) {
+	if ( r_jitter.GetBool() )
+	{
 		static idRandom random;
 		jitterx = random.RandomFloat();
 		jittery = random.RandomFloat();
-	} else {
+	}
+	else
+	{
 		jitterx = 0.0f;
 		jittery = 0.0f;
 	}
@@ -368,16 +373,36 @@ void R_SetupProjectionMatrix( viewDef_t *viewDef ) {
 	//
 	// set up projection matrix
 	//
-	const float zNear = ( viewDef->renderView.cramZNear ) ? ( r_znear.GetFloat() * 0.25f ) : r_znear.GetFloat();
 
-	float ymax = zNear * tan( viewDef->renderView.fov_y * idMath::PI / 360.0f );
-	float ymin = -ymax;
+	// Koz begin : changing to allow the use of Oculus FOV values instead of the game FOV.
+	float ymax, ymin, xmax, xmin, width, height = 0;
 
-	float xmax = zNear * tan( viewDef->renderView.fov_x * idMath::PI / 360.0f );
-	float xmin = -xmax;
+	const float zNear = (viewDef->renderView.cramZNear) ? (r_znear.GetFloat() * 0.25f) : r_znear.GetFloat();
 
-	const float width = xmax - xmin;
-	const float height = ymax - ymin;
+	if ( game->isVR )
+	{
+
+		int pEye = viewDef->renderView.viewEyeBuffer == -1 ? 0 : 1;
+
+		ymax = zNear * vr->hmdEye[pEye].eyeFov.UpTan;
+		ymin = -zNear * vr->hmdEye[pEye].eyeFov.DownTan;
+
+		xmax = zNear * vr->hmdEye[pEye].eyeFov.RightTan;
+		xmin = -zNear * vr->hmdEye[pEye].eyeFov.LeftTan;
+	}
+	else
+	{
+		ymax = zNear * tan( viewDef->renderView.fov_y * idMath::PI / 360.0f );
+		ymin = -ymax;
+
+		xmax = zNear * tan( viewDef->renderView.fov_x * idMath::PI / 360.0f );
+		xmin = -xmax;
+	}
+
+	// Koz end
+
+	width = xmax - xmin;
+	height = ymax - ymin;
 
 	const int viewWidth = viewDef->viewport.x2 - viewDef->viewport.x1 + 1;
 	const int viewHeight = viewDef->viewport.y2 - viewDef->viewport.y1 + 1;
@@ -393,31 +418,32 @@ void R_SetupProjectionMatrix( viewDef_t *viewDef ) {
 	ymin += jittery * height;
 	ymax += jittery * height;
 
-	viewDef->projectionMatrix[0*4+0] = 2.0f * zNear / width;
-	viewDef->projectionMatrix[1*4+0] = 0.0f;
-	viewDef->projectionMatrix[2*4+0] = ( xmax + xmin ) / width;	// normally 0
-	viewDef->projectionMatrix[3*4+0] = 0.0f;
+	viewDef->projectionMatrix[0 * 4 + 0] = 2.0f * zNear / width;
+	viewDef->projectionMatrix[1 * 4 + 0] = 0.0f;
+	viewDef->projectionMatrix[2 * 4 + 0] = (xmax + xmin) / width;	// normally 0
+	viewDef->projectionMatrix[3 * 4 + 0] = 0.0f;
 
-	viewDef->projectionMatrix[0*4+1] = 0.0f;
-	viewDef->projectionMatrix[1*4+1] = 2.0f * zNear / height;
-	viewDef->projectionMatrix[2*4+1] = ( ymax + ymin ) / height;	// normally 0
-	viewDef->projectionMatrix[3*4+1] = 0.0f;
+	viewDef->projectionMatrix[0 * 4 + 1] = 0.0f;
+	viewDef->projectionMatrix[1 * 4 + 1] = 2.0f * zNear / height;
+	viewDef->projectionMatrix[2 * 4 + 1] = (ymax + ymin) / height;	// normally 0
+	viewDef->projectionMatrix[3 * 4 + 1] = 0.0f;
 
 	// this is the far-plane-at-infinity formulation, and
 	// crunches the Z range slightly so w=0 vertexes do not
 	// rasterize right at the wraparound point
-	viewDef->projectionMatrix[0*4+2] = 0.0f;
-	viewDef->projectionMatrix[1*4+2] = 0.0f;
-	viewDef->projectionMatrix[2*4+2] = -0.999f; // adjust value to prevent imprecision issues
-	viewDef->projectionMatrix[3*4+2] = -2.0f * zNear;
+	viewDef->projectionMatrix[0 * 4 + 2] = 0.0f;
+	viewDef->projectionMatrix[1 * 4 + 2] = 0.0f;
+	viewDef->projectionMatrix[2 * 4 + 2] = -0.999f; // adjust value to prevent imprecision issues
+	viewDef->projectionMatrix[3 * 4 + 2] = -2.0f * zNear;
 
-	viewDef->projectionMatrix[0*4+3] = 0.0f;
-	viewDef->projectionMatrix[1*4+3] = 0.0f;
-	viewDef->projectionMatrix[2*4+3] = -1.0f;
-	viewDef->projectionMatrix[3*4+3] = 0.0f;
+	viewDef->projectionMatrix[0 * 4 + 3] = 0.0f;
+	viewDef->projectionMatrix[1 * 4 + 3] = 0.0f;
+	viewDef->projectionMatrix[2 * 4 + 3] = -1.0f;
+	viewDef->projectionMatrix[3 * 4 + 3] = 0.0f;
 
-	if ( viewDef->renderView.flipProjection ) {
-		viewDef->projectionMatrix[1*4+1] = -viewDef->projectionMatrix[1*4+1];
-		viewDef->projectionMatrix[1*4+3] = -viewDef->projectionMatrix[1*4+3];
+	if ( viewDef->renderView.flipProjection )
+	{
+		viewDef->projectionMatrix[1 * 4 + 1] = -viewDef->projectionMatrix[1 * 4 + 1];
+		viewDef->projectionMatrix[1 * 4 + 3] = -viewDef->projectionMatrix[1 * 4 + 3];
 	}
 }

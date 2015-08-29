@@ -68,6 +68,7 @@ typedef enum {
 #define	MAX_IMAGE_NAME	256
 
 class idImage {
+	friend class Framebuffer; // RB 
 public:
 				idImage( const char * name );
 
@@ -154,6 +155,10 @@ public:
 	bool		IsLoaded() const { return texnum != TEXTURE_NOT_LOADED; }
 
 	static void			GetGeneratedName( idStr &_name, const textureUsage_t &_usage, const cubeFiles_t &_cube );
+
+	// Koz begin
+	GLuint		GetTexNum() const { return texnum; } // koz fixme return texnum for FBO binding
+	// Koz end
 
 private:
 	friend class idImageManager;

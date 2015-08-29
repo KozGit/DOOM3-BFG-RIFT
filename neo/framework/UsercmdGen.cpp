@@ -29,7 +29,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 #pragma hdrstop
 
-#include "../sys/win32/in_motion_sensor.h"
+#include "vr\Vr.h"
 
 idCVar joy_mergedThreshold( "joy_mergedThreshold", "1", CVAR_BOOL | CVAR_ARCHIVE, "If the thresholds aren't merged, you drift more off center" );
 idCVar joy_newCode( "joy_newCode", "1", CVAR_BOOL | CVAR_ARCHIVE, "Use the new codepath" );
@@ -446,7 +446,9 @@ idUsercmdGenLocal::MotionSensorMove
 */
 idVec3 imuAngles;
 void idUsercmdGenLocal::MotionSensorMove() {
-	IN_MotionSensor_Read(imuAngles[ROLL], imuAngles[PITCH], imuAngles[YAW]);
+	static idVec3 hmdTranslation = vec3_zero;
+
+	if ( game->isVR) vr->HMDGetOrientation( imuAngles[ROLL], imuAngles[PITCH], imuAngles[YAW], hmdTranslation );
 }
 
 /*
@@ -1066,14 +1068,23 @@ void idUsercmdGenLocal::MakeCurrent() {
 		// get head tracker angles
 		MotionSensorMove();
 	}
-
-
-	idVec3 cmdangles = viewangles + imuAngles;
-	//idVec3 cmdangles = imuAngles;
-	//cmdangles[YAW] += viewangles[YAW];
-
-	//viewangles = imuAngles;
-
+	
+	idVec3 cmdangles = vec3_zero;
+	
+	if ( game->isVR )
+	{
+		cmdangles = imuAngles;
+		cmdangles[YAW] += viewangles[YAW]; 
+		
+		if ( cmdangles[YAW] >= 180.0f ) cmdangles[YAW] -= 360.0f;
+		if ( cmdangles[YAW] <= -180.0f ) cmdangles[YAW] += 360.0f;
+	
+	}
+	else
+	{
+		cmdangles = viewangles;
+	}
+	
 	for ( int i = 0; i < 3; i++ ) {
 		//cmd.angles[i] = ANGLE2SHORT( viewangles[i] );
 		cmd.angles[i] = ANGLE2SHORT( cmdangles[i] );

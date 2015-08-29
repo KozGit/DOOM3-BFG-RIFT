@@ -35,6 +35,13 @@ If you have questions concerning this license or the applicable additional terms
 // Vista OpenGL wrapper check
 #include "../sys/win32/win_local.h"
 
+// Koz begin
+#undef strncmp // koz fixme to prevent conflict with oculus SDK.
+#include "vr\vr.h"
+#include "..\dependencies\LibOVR\Include\OVR.h"
+// Koz end
+
+
 // DeviceContext bypasses RenderSystem to work directly with this
 idGuiModel * tr_guiModel;
 
@@ -219,6 +226,21 @@ PFNGLMAPBUFFERARBPROC					qglMapBufferARB;
 PFNGLUNMAPBUFFERARBPROC					qglUnmapBufferARB;
 PFNGLGETBUFFERPARAMETERIVARBPROC		qglGetBufferParameterivARB;
 PFNGLGETBUFFERPOINTERVARBPROC			qglGetBufferPointervARB;
+
+//koz begin hack support into qgl for framebuffers
+PFNGLBINDFRAMEBUFFEREXTPROC					qglBindFramebuffer;
+PFNGLBINDRENDERBUFFEREXTPROC				qglBindRenderbuffer;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC			qglFramebufferTexture2D;
+PFNGLBLITFRAMEBUFFEREXTPROC					qglBlitFramebuffer;
+PFNGLGENFRAMEBUFFERSEXTPROC					qglGenFramebuffers;
+PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC			qglFramebufferRenderbuffer;
+PFNGLDRAWBUFFERSARBPROC						qglDrawBuffers;
+PFNGLGENRENDERBUFFERSEXTPROC				qglGenRenderbuffers;
+PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC	qglRenderbufferStorageMultisample;
+PFNGLRENDERBUFFERSTORAGEEXTPROC				qglRenderbufferStorage;
+PFNGLFRAMEBUFFERTEXTURELAYEREXTPROC			qglFramebufferTextureLayer;
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC			qglCheckFramebufferStatus;
+// koz end
 
 // GL_ARB_map_buffer_range
 PFNGLMAPBUFFERRANGEPROC					qglMapBufferRange;
@@ -552,6 +574,36 @@ static void R_CheckPortableExtensions() {
 		}
 	}
 
+	// RB GL_EXT_Framebuffer_object
+	glConfig.framebufferObjectAvailable = R_CheckExtension( "GL_EXT_framebuffer_object" ) ;
+	if ( glConfig.framebufferObjectAvailable )
+	{
+		glGetIntegerv( GL_MAX_RENDERBUFFER_SIZE, &glConfig.maxRenderbufferSize );
+		glGetIntegerv( GL_MAX_COLOR_ATTACHMENTS, &glConfig.maxColorAttachments );
+
+		common->Printf( "...using %s\n", "GL_EXT_framebuffer_object" );
+	}
+	else
+	{
+		// Koz
+		common->Error( "GL_EXT_framebuffer_object is required but not found!\n" );
+	}
+
+	//koz begin hack support into qgl for framebuffers
+	qglBindFramebuffer					= (PFNGLBINDFRAMEBUFFEREXTPROC)GLimp_ExtensionPointer( "glBindFramebufferEXT" );
+	qglBindRenderbuffer					= (PFNGLBINDRENDERBUFFEREXTPROC)GLimp_ExtensionPointer( "glBindRenderbufferEXT" );
+	qglFramebufferTexture2D				= (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC)GLimp_ExtensionPointer( "glFramebufferTexture2DEXT" );
+	qglBlitFramebuffer					= (PFNGLBLITFRAMEBUFFEREXTPROC)GLimp_ExtensionPointer( "glBlitFramebufferEXT" );
+	qglGenFramebuffers					= (PFNGLGENFRAMEBUFFERSEXTPROC)GLimp_ExtensionPointer( "glGenFramebuffersEXT" );
+	qglFramebufferRenderbuffer			= (PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC)GLimp_ExtensionPointer( "glFramebufferRenderbufferEXT" );
+	qglDrawBuffers						= (PFNGLDRAWBUFFERSARBPROC)GLimp_ExtensionPointer( "glDrawBuffersARB" );
+	qglGenRenderbuffers					= (PFNGLGENRENDERBUFFERSEXTPROC)GLimp_ExtensionPointer( "glGenRenderbuffersEXT" );
+	qglRenderbufferStorageMultisample	= (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC)GLimp_ExtensionPointer( "glRenderbufferStorageMultisampleEXT" );
+	qglRenderbufferStorage				= (PFNGLRENDERBUFFERSTORAGEEXTPROC)GLimp_ExtensionPointer( "glRenderbufferStorageEXT" );
+	qglFramebufferTextureLayer			= (PFNGLFRAMEBUFFERTEXTURELAYEREXTPROC)GLimp_ExtensionPointer( "glFramebufferTextureLayerEXT" );
+	qglCheckFramebufferStatus			= (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC)GLimp_ExtensionPointer( "glCheckFramebufferStatusEXT" );
+	// koz end
+
 	// GL_ARB_debug_output
 	glConfig.debugOutputAvailable = R_CheckExtension( "GL_ARB_debug_output" );
 	if ( glConfig.debugOutputAvailable ) {
@@ -659,7 +711,11 @@ r_displayRefresh 70	specify 70 hz, etc
 */
 void R_SetNewMode( const bool fullInit ) {
 	// try up to three different configurations
+	
+	int fullscreenMode = r_fullscreen.GetInteger();
 
+//	if ( vr->hasOculusRift ) fullscreenMode = 0;
+	
 	for ( int i = 0 ; i < 3 ; i++ ) {
 		if ( i == 0 && stereoRender_enable.GetInteger() != STEREO3D_QUAD_BUFFER ) {
 			continue;		// don't even try for a stereo mode
@@ -667,19 +723,41 @@ void R_SetNewMode( const bool fullInit ) {
 
 		glimpParms_t	parms;
 
-		if ( r_fullscreen.GetInteger() <= 0 ) {
+		// koz begin
+		// koz if hmd detected, force a windowed mode for the oculus mirror texture.
+		if ( fullscreenMode <= 0 ) { // || vr->hasOculusRift ) {
+			common->Printf( "R_SetNewMode detected an Oculus Rift. Setting windowed mode %d x %d.\n", vr->hmdWidth / 2, vr->hmdHeight / 2 );
+			
 			// use explicit position / size for window
+			int windowWidth = 0;
+			int windowHeight = 0;
+			/*
+			if ( vr->hasOculusRift )
+			{
+				float as = vr->hmdWidth / vr->hmdHeight;
+				
+				windowWidth = 800;
+				windowHeight = int ( 800 / as ) ;
+			}
+			else */
+			{
+				windowWidth = r_windowWidth.GetInteger();
+				windowHeight = r_windowHeight.GetInteger();
+			}
+
 			parms.x = r_windowX.GetInteger();
 			parms.y = r_windowY.GetInteger();
-			parms.width = r_windowWidth.GetInteger();
-			parms.height = r_windowHeight.GetInteger();
+			parms.width = windowWidth;
+			parms.height = windowHeight;
+			// koz end
+
 			// may still be -1 to force a borderless window
-			parms.fullScreen = r_fullscreen.GetInteger();
+			parms.fullScreen = fullscreenMode;
 			parms.displayHz = 0;		// ignored
 		} else {
 			// get the mode list for this monitor
 			idList<vidMode_t> modeList;
-			if ( !R_GetModeListForDisplay( r_fullscreen.GetInteger()-1, modeList ) ) {
+			if ( !R_GetModeListForDisplay( r_fullscreen.GetInteger() - 1, modeList ) ) {
 				idLib::Printf( "r_fullscreen reset from %i to 1 because mode list failed.", r_fullscreen.GetInteger() );
 				r_fullscreen.SetInteger( 1 );
 				R_GetModeListForDisplay( r_fullscreen.GetInteger()-1, modeList );
@@ -1717,7 +1795,7 @@ void GfxInfo_f( const idCmdArgs &args ) {
 		case STEREO3D_HDMI_720:					idLib::Printf( "STEREO3D_HDMI_720\n" ); break;
 		case STEREO3D_INTERLACED:				idLib::Printf( "STEREO3D_INTERLACED\n" ); break;
 		case STEREO3D_QUAD_BUFFER:				idLib::Printf( "STEREO3D_QUAD_BUFFER\n" ); break;
-		case STEREO3D_VR920:					idLib::Printf( "STEREO3D_VR920\n" ); break;
+		case STEREO3D_HMD:						idLib::Printf( "STEREO3D_HMD\n" ); break;// koz
 		default:idLib::Printf( "Unknown (%i)\n", renderSystem->GetStereo3DMode() ); break;
 	}
 
@@ -2440,7 +2518,15 @@ idRenderSystemLocal::GetWidth
 ========================
 */
 int idRenderSystemLocal::GetWidth() const {
-	if ( glConfig.stereo3Dmode == STEREO3D_SIDE_BY_SIDE || glConfig.stereo3Dmode == STEREO3D_SIDE_BY_SIDE_COMPRESSED ) {
+	
+	// Koz begin
+
+	if ( vr->useFBO ) {
+		return globalFramebuffers.primaryFBO->GetWidth();
+	}
+	// Koz end
+		
+	if ( glConfig.stereo3Dmode == STEREO3D_SIDE_BY_SIDE || glConfig.stereo3Dmode == STEREO3D_HMD || glConfig.stereo3Dmode == STEREO3D_SIDE_BY_SIDE_COMPRESSED ) {
 		return glConfig.nativeScreenWidth >> 1;
 	}
 	return glConfig.nativeScreenWidth;
@@ -2452,17 +2538,43 @@ idRenderSystemLocal::GetHeight
 ========================
 */
 int idRenderSystemLocal::GetHeight() const {
+	
+	// Koz begin
+
+	if ( vr->useFBO ) {
+		return globalFramebuffers.primaryFBO->GetHeight();
+	}
+	// Koz end
+	
 	if ( glConfig.stereo3Dmode == STEREO3D_HDMI_720 ) {
 		return 720;
 	}
-	extern idCVar stereoRender_warp;
-	if ( glConfig.stereo3Dmode == STEREO3D_SIDE_BY_SIDE && stereoRender_warp.GetBool() ) {
-		// for the Rift, render a square aspect view that will be symetric for the optics
-		return glConfig.nativeScreenWidth >> 1;
-	}
+	
 	if ( glConfig.stereo3Dmode == STEREO3D_INTERLACED || glConfig.stereo3Dmode == STEREO3D_TOP_AND_BOTTOM_COMPRESSED ) {
 		return glConfig.nativeScreenHeight >> 1;
 	}
+	return glConfig.nativeScreenHeight;
+}
+
+/*
+========================
+Koz
+idRenderSystemLocal::GetNativeWidth
+========================
+*/
+int idRenderSystemLocal::GetNativeWidth() const
+{
+	return glConfig.nativeScreenWidth;
+}
+
+/*
+========================
+Koz
+idRenderSystemLocal::GetNativeHeight
+========================
+*/
+int idRenderSystemLocal::GetNativeHeight() const
+{
 	return glConfig.nativeScreenHeight;
 }
 
@@ -2472,6 +2584,13 @@ idRenderSystemLocal::GetStereo3DMode
 ========================
 */
 stereo3DMode_t idRenderSystemLocal::GetStereo3DMode() const {
+
+	// Koz begin
+	if ( game->isVR ) {
+		return STEREO3D_HMD;
+	}
+	// Koz end
+
 	return glConfig.stereo3Dmode;
 }
 
@@ -2499,6 +2618,12 @@ idRenderSystemLocal::GetStereoScopicRenderingMode
 ========================
 */
 stereo3DMode_t idRenderSystemLocal::GetStereoScopicRenderingMode() const {
+
+	// Koz begin
+	if ( game->isVR ) {
+		return (stereo3DMode_t)STEREO3D_HMD;
+	}
+	// Koz end
 	return ( !IsStereoScopicRenderingSupported() ) ? STEREO3D_OFF : (stereo3DMode_t)stereoRender_enable.GetInteger();
 }
 

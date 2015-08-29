@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 
 #include "tr_local.h"
+#include "vr\Vr.h"
 
 /*
 ================
@@ -691,7 +692,23 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight ) {
 
 	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
 
-	qglReadBuffer( GL_BACK );
+	// Koz begin
+	if ( vr->useFBO )
+	{
+		if ( vr->VR_AAmode == VR_AA_MSAA ) // resolve the MSAA renderbuffer before copy.
+		{
+			ResolveMSAA();
+		}
+		else
+		{
+			globalFramebuffers.primaryFBO->Bind();
+		}
+	}
+	else
+	{
+		glReadBuffer( GL_BACK );
+	}
+	// Koz end
 
 	opts.width = imageWidth;
 	opts.height = imageHeight;
@@ -705,6 +722,12 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight ) {
 	qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 
 	backEnd.pc.c_copyFrameBuffer++;
+
+	// Koz
+	if ( vr->useFBO )
+	{
+		globalFramebuffers.primaryFBO->Bind();
+	}
 }
 
 /*
@@ -713,6 +736,25 @@ CopyDepthbuffer
 ====================
 */
 void idImage::CopyDepthbuffer( int x, int y, int imageWidth, int imageHeight ) {
+	
+	// Koz begin
+	if ( vr->useFBO )
+	{
+		if ( vr->VR_AAmode == VR_AA_MSAA )
+		{
+			ResolveMSAA();
+		}
+		else
+		{
+			globalFramebuffers.primaryFBO->Bind();
+		}
+	}
+	else
+	{
+		glReadBuffer( GL_BACK );
+	}
+	// Koz end
+
 	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
 
 	opts.width = imageWidth;
@@ -720,6 +762,12 @@ void idImage::CopyDepthbuffer( int x, int y, int imageWidth, int imageHeight ) {
 	qglCopyTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, x, y, imageWidth, imageHeight, 0 );
 
 	backEnd.pc.c_copyFrameBuffer++;
+	
+	// Koz
+	if ( vr->useFBO )
+	{
+		globalFramebuffers.primaryFBO->Bind();
+	}
 }
 
 /*

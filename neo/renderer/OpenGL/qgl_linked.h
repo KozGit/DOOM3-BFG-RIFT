@@ -363,6 +363,21 @@ If you have questions concerning this license or the applicable additional terms
 #define qglVertexPointer glVertexPointer
 #define qglViewport glViewport
 
+//koz begin hack support into qgl for framebuffers
+#define qglBindFramebuffer glBindFramebuffer
+#define qglBindRenderbuffer glBindRenderbuffer
+#define qglFramebufferTexture2D glFramebufferTexture2D
+#define qglBlitFramebuffer glBlitFramebuffer
+#define qglGenFramebuffers glGenFramebuffers
+#define qglFramebufferRenderbuffer glFramebufferRenderbuffer
+#define qglDrawBuffers glDrawBuffers
+#define qglGenRenderbuffers glGenRenderbuffers
+#define qglRenderbufferStorageMultisample glRenderbufferStorageMultisample
+#define qglRenderbufferStorage glRenderbufferStorage
+#define qglFramebufferTextureLayer glFramebufferTextureLayer
+#define qglCheckFramebufferStatus glCheckFramebufferStatus
+// koz end
+
 #ifdef GLX_VERSION_1_1 // catch all for any GLX-aware situation
 #define qglXChooseVisual glXChooseVisual
 #define qglXCreateContext glXCreateContext

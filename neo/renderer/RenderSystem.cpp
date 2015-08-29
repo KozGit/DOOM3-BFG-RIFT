@@ -30,7 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../idlib/precompiled.h"
 
 #include "tr_local.h"
-
+#include "vr\Vr.h"
 idRenderSystemLocal	tr;
 idRenderSystem * renderSystem = &tr;
 
@@ -944,7 +944,11 @@ void idRenderSystemLocal::CaptureRenderToFile( const char *fileName, bool fixAlp
 	guiModel->Clear();
 	RenderCommandBuffers( frameData->cmdHead );
 
-	qglReadBuffer( GL_BACK );
+
+	if ( !vr->useFBO ) // koz
+	{
+		glReadBuffer( GL_BACK );
+	}
 
 	// include extra space for OpenGL padding to word boundaries
 	int	c = ( rc.GetWidth() + 3 ) * rc.GetHeight();

@@ -37,6 +37,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "Image.h"
 #include "RenderTexture.h"
 #include "Font.h"
+#include "Framebuffer.h"
 
 // everything that is needed by the backend needs
 // to be double buffered to allow it to run in
@@ -620,6 +621,9 @@ struct glstate_t {
 	unsigned int		currentVertexBuffer;
 	unsigned int		currentIndexBuffer;
 
+	// RB
+	Framebuffer*		currentFramebuffer;
+
 	float				polyOfsScale;
 	float				polyOfsBias;
 
@@ -694,6 +698,12 @@ public:
 	virtual void			EnableStereoScopicRendering( const stereo3DMode_t mode ) const;
 	virtual int				GetWidth() const;
 	virtual int				GetHeight() const;
+	
+	// koz begin
+	virtual int				GetNativeWidth() const;
+	virtual int				GetNativeHeight() const;
+	// koz end
+	
 	virtual float			GetPixelAspect() const;
 	virtual float			GetPhysicalScreenWidthInCentimeters() const;
 	virtual idRenderWorld *	AllocRenderWorld();

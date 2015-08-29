@@ -1353,7 +1353,9 @@ GLimp_SwapBuffers
 =====================
 */
 void GLimp_SwapBuffers() {
-	if ( r_swapInterval.IsModified() ) {
+	
+	
+		if ( r_swapInterval.IsModified() ) {
 		r_swapInterval.ClearModified();
 
 		int interval = 0;
@@ -1367,7 +1369,7 @@ void GLimp_SwapBuffers() {
 			wglSwapIntervalEXT( interval );
 		}
 	}
-
+			
 	qwglSwapBuffers( win32.hDC );
 }
 

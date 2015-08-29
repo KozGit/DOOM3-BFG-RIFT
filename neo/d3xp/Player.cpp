@@ -33,7 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../framework/Common_local.h"
 #include "PredictedValue_impl.h"
 
-#include "../sys/win32/in_motion_sensor.h"
+#include "vr\Vr.h"
 
 idCVar flashlight_batteryDrainTimeMS( "flashlight_batteryDrainTimeMS", "30000", CVAR_INTEGER, "amount of time (in MS) it takes for full battery to drain (-1 == no battery drain)" );
 idCVar flashlight_batteryChargeTimeMS( "flashlight_batteryChargeTimeMS", "3000", CVAR_INTEGER, "amount of time (in MS) it takes to fully recharge battery" );
@@ -57,6 +57,9 @@ idCVar pm_clientAuthoritative_Divergence( "pm_clientAuthoritative_Divergence", "
 idCVar pm_clientInterpolation_Divergence( "pm_clientInterpolation_Divergence", "5000.0f", CVAR_FLOAT, "" );
 
 idCVar pm_clientAuthoritative_minSpeedSquared( "pm_clientAuthoritative_minSpeedSquared", "1000.0f", CVAR_FLOAT, "" );
+
+//koz
+idCVar vr_aimPitchOffset( "vr_aimPitchOffset", "-5", CVAR_FLOAT | CVAR_ARCHIVE, "Aim Pitch offset degrees for VR - save your neck." );
 
 extern idCVar g_demoMode;
 
@@ -2017,6 +2020,8 @@ void idPlayer::Spawn() {
 		weapon.GetEntity()->ForceAmmoInClip();
 	}
 
+	ovr_RecenterPose( vr->hmd ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
+
 }
 
 /*
@@ -2648,6 +2653,7 @@ void idPlayer::Restore( idRestoreGame *savefile ) {
 		}		
 	}
 
+	ovr_RecenterPose( vr->hmd ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
 }
 
 /*
@@ -8884,6 +8890,8 @@ void idPlayer::CalculateViewWeaponPos( idVec3 &origin, idMat3 &axis ) {
 	// decoupled weapon aiming in head mounted displays
 	angles.pitch += independentWeaponPitchAngle;
 
+	angles.pitch += vr_aimPitchOffset.GetFloat();
+
 	const idMat3	anglesMat = angles.ToMat3();
 	const idMat3	scaledMat = anglesMat * g_gunScale.GetFloat();
 
@@ -9060,8 +9068,17 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 		const idVec3 & gravityVector = physicsObj.GetGravityNormal();
 		origin += gravityVector * g_viewNodalZ.GetFloat();
 
+		// Koz begin
+		static float roll = 0;
+		static float pitch = 0;
+		static float yaw = 0;
+		static idVec3 hmdTranslation = vec3_zero;
+		
+		vr->HMDGetOrientation( roll, pitch, yaw, hmdTranslation );
+		// Koz end
+
 		//mmdanggg2: hooray for positional tracking being a bitch with math and stuff....
-		if (IN_MotionSensor_CanReadPosition()){
+		if ( vr->hmdPositionTracked  ){ // koz
 			if (pm_showBody.GetBool()) {
 				eyeHeightAboveRotationPoint = 16.5f;
 			}
@@ -9071,25 +9088,25 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 			eyeShiftRight = 0;
 			origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2];
 
-			float posTrackx = 0.0f, posTracky = 0.0f, posTrackz = 0.0f, posTrackxAdj = 0.0f, posTrackyAdj = 0.0f;
-			IN_MotionSensor_ReadPosition(posTrackx, posTrackz, posTracky); // Swapped z and y coz oculus returns retarded y=up coords
+			float posTrackxAdj = 0.0f, posTrackyAdj = 0.0f;
+					
 
 			double yawRad = DEG2RAD(angles.yaw - 90); // -90deg because then it works
 			double angleCosine = cos(yawRad);
 			double angleSine = sin(yawRad);
 
-			posTracky = -posTracky;// invert the y axis beacuse then it works
+			
+			posTrackxAdj = hmdTranslation.x * angleCosine - hmdTranslation.y * angleSine; // rotate the vector so the users pos is aligned with the character
+			posTrackyAdj = hmdTranslation.x * angleSine + hmdTranslation.y * angleCosine;
 
-			posTrackxAdj = posTrackx * angleCosine - posTracky * angleSine; // rotate the vector so the users pos is aligned with the character
-			posTrackyAdj = posTrackx * angleSine + posTracky * angleCosine;
+			idVec3 posTrackVec(posTrackxAdj, posTrackyAdj, hmdTranslation.z);
 
-			idVec3 posTrackVec(posTrackxAdj, posTrackyAdj, posTrackz);
-
-			origin += posTrackVec * 40.0f; // the number is how much the pos tracking affects the view, 40 is a complete guess
+			origin += posTrackVec; 
 
 			origin.z += eyeHeightAboveRotationPoint; // offset the height so it is on the neck
 		}
-		else {
+		else 
+		{
 		// adjust the origin based on the camera nodal distance (eye distance from neck)
 		origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2]*eyeHeightAboveRotationPoint;
 		}

@@ -34,6 +34,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../renderer/ImageOpts.h"
 #include "../../doomclassic/doom/doomlib.h"
 #include "../../doomclassic/doom/globaldata.h"
+#include "vr\Vr.h"
 
 /*
 
@@ -370,6 +371,12 @@ void idCommonLocal::Frame() {
 
 		// This is the only place this is incremented
 		idLib::frameNumber++;
+
+		// Koz
+		if ( game->isVR )
+		{
+			vr->FrameStart( idLib::frameNumber );
+		}
 
 		// allow changing SIMD usage on the fly
 		if ( com_forceGenericSIMD.IsModified() ) {

@@ -31,7 +31,8 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "../tr_local.h"
 #include "../../framework/Common_local.h"
-#include "../../sys/win32/vr920.h"
+#include "vr\Vr.h"
+
 
 idCVar r_drawFlickerBox( "r_drawFlickerBox", "0", CVAR_RENDERER | CVAR_BOOL, "visual test for dropping frames" );
 //Carl: Full SBS will use Oculus Rift mode by default
@@ -120,11 +121,14 @@ We want to exit this with the GPU idle, right at vsync
 */
 const void GL_BlockingSwapBuffers() {
     RENDERLOG_PRINTF( "***************** GL_BlockingSwapBuffers *****************\n\n\n" );
-
+	
 	const int beforeFinish = Sys_Milliseconds();
 
 	if ( !glConfig.syncAvailable ) {
+		// koz
+		//if ( !game->isVR ) glFinish();
 		glFinish();
+
 	}
 
 	const int beforeSwap = Sys_Milliseconds();
@@ -216,7 +220,16 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 	// To allow stereo deghost processing, the views have to be copied to separate
 	// textures anyway, so there isn't any benefit to rendering to BACK_RIGHT for
 	// that eye.
-	qglDrawBuffer( GL_BACK_LEFT );
+	
+	//Koz begin
+	if ( vr->useFBO )
+	{
+		globalFramebuffers.primaryFBO->Bind();
+	}
+	else {
+		glDrawBuffer( GL_BACK_LEFT );
+	}
+	// Koz end
 
 	// create the stereoRenderImage if we haven't already
 	static idImage * stereoRenderImages[2];
@@ -295,6 +308,10 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 
 		// copy to the target
 		stereoRenderImages[ targetEye ]->CopyFramebuffer( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
+		
+		// Koz
+		vr->hmdCurrentRender[targetEye] = stereoRenderImages[targetEye];
+
 	}
 
 	// perform the final compositing / warping / deghosting to the actual framebuffer(s)
@@ -308,8 +325,10 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 	// make sure we draw to both eyes.  This is likely to be sub-optimal
 	// performance on most cards and drivers, but it is better than getting
 	// a confusing, half-ghosted view.
-	if ( renderSystem->GetStereo3DMode() != STEREO3D_QUAD_BUFFER ) {
-		glDrawBuffer( GL_BACK );
+	
+	if ( renderSystem->GetStereo3DMode() != STEREO3D_QUAD_BUFFER )
+	{
+		if ( !vr->useFBO ) glDrawBuffer( GL_BACK ); // Koz 
 	}
 
 	GL_State( GLS_DEPTHFUNC_ALWAYS );
@@ -329,10 +348,7 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 
 	renderProgManager.BindShader_Texture();
 	GL_Color( 1, 1, 1, 1 );
-	static stereo3DMode_t old3Dmode = STEREO3D_OFF;
-	if (old3Dmode == STEREO3D_VR920 && renderSystem->GetStereo3DMode()!=STEREO3D_VR920) {
-		VR920_StopStereo3D();
-	}
+		
 	switch( renderSystem->GetStereo3DMode() ) {
 	case STEREO3D_QUAD_BUFFER:
 		glDrawBuffer( GL_BACK_RIGHT );
@@ -371,59 +387,23 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 		glClear( GL_COLOR_BUFFER_BIT );
 		break;
 	default:
-	case STEREO3D_SIDE_BY_SIDE:
-		if ( stereoRender_warp.GetBool() ) {
-			// this is the Rift warp
-			// renderSystem->GetWidth() / GetHeight() have returned equal values (640 for initial Rift)
-			// and we are going to warp them onto a symetric square region of each half of the screen
+	
+	case STEREO3D_HMD:
 
-			renderProgManager.BindShader_StereoWarp();
+		//Koz begin
+		// This is the rift.
 
-			// clear the entire screen to black
-			// we could be smart and only clear the areas we aren't going to draw on, but
-			// clears are fast...
-			glScissor ( 0, 0, glConfig.nativeScreenWidth, glConfig.nativeScreenHeight );
-			glClearColor( 0, 0, 0, 0 );
-			glClear( GL_COLOR_BUFFER_BIT );
-
-			// the size of the box that will get the warped pixels
-			// With the 7" displays, this will be less than half the screen width
-			const int pixelDimensions = ( glConfig.nativeScreenWidth >> 1 ) * stereoRender_warpTargetFraction.GetFloat();
-
-			// Always scissor to the half-screen boundary, but the viewports
-			// might cross that boundary if the lenses can be adjusted closer
-			// together.
-			glViewport( ( glConfig.nativeScreenWidth >> 1 ) - pixelDimensions, 
-				( glConfig.nativeScreenHeight >> 1 ) - ( pixelDimensions >> 1 ), 
-				pixelDimensions, pixelDimensions );
-			glScissor ( 0, 0, glConfig.nativeScreenWidth >> 1, glConfig.nativeScreenHeight );
-
-			idVec4	color( stereoRender_warpCenterX.GetFloat(), stereoRender_warpCenterY.GetFloat(), stereoRender_warpParmZ.GetFloat(), stereoRender_warpParmW.GetFloat() );
-			// don't use GL_Color(), because we don't want to clamp
-			renderProgManager.SetRenderParm( RENDERPARM_COLOR, color.ToFloatPtr() );
-
-			GL_SelectTexture( 0 );
-			stereoRenderImages[0]->Bind();
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
-			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
-
-			idVec4	color2( stereoRender_warpCenterX.GetFloat(), stereoRender_warpCenterY.GetFloat(), stereoRender_warpParmZ.GetFloat(), stereoRender_warpParmW.GetFloat() );
-			// don't use GL_Color(), because we don't want to clamp
-			renderProgManager.SetRenderParm( RENDERPARM_COLOR, color2.ToFloatPtr() );
-
-			glViewport( ( glConfig.nativeScreenWidth >> 1 ),
-				( glConfig.nativeScreenHeight >> 1 ) - ( pixelDimensions >> 1 ), 
-				pixelDimensions, pixelDimensions );
-			glScissor ( glConfig.nativeScreenWidth >> 1, 0, glConfig.nativeScreenWidth >> 1, glConfig.nativeScreenHeight );
-
-			GL_SelectTexture( 0 );
-			stereoRenderImages[1]->Bind();
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
-			qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
-			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
+		if ( game->isVR )
+		{
+			vr->HMDRender( stereoRenderImages[0], stereoRenderImages[1] );
+			
+			//GL_CheckErrors();
 			break;
+		
 		}
+		//Koz end		
+	
+	case STEREO3D_SIDE_BY_SIDE:
 		// a non-warped side-by-side-uncompressed (dual input cable) is rendered
 		// just like STEREO3D_SIDE_BY_SIDE_COMPRESSED, so fall through.
 	case STEREO3D_SIDE_BY_SIDE_COMPRESSED:
@@ -484,38 +464,16 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t * const allCmds
 
 		break;
 
-	case STEREO3D_VR920:
-		if (old3Dmode!=STEREO3D_VR920)
-			VR920_StartStereo3D();
-		static int vr920eye = 0;
-		if (!vr920eye && (vr920StereoHandle!=INVALID_HANDLE_VALUE)) {
-			IWRSTEREO_SetLR(vr920StereoHandle, 0);
-			GL_SelectTexture( 0 );
-			stereoRenderImages[0]->Bind();
-			GL_SelectTexture( 1 );
-			stereoRenderImages[1]->Bind();
-			GL_ViewportAndScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
-			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
-		} else {
-			IWRSTEREO_SetLR(vr920StereoHandle, 1);
-			GL_SelectTexture( 0 );
-			stereoRenderImages[1]->Bind();
-			GL_SelectTexture( 1 );
-			stereoRenderImages[0]->Bind();
-			GL_ViewportAndScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
-			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
-		}
-		vr920eye = !vr920eye;
-		break;
+
 	}
-	old3Dmode = renderSystem->GetStereo3DMode();
+	
 
 	// debug tool
 	RB_DrawFlickerBox();
 
 	// make sure the drawing is actually started
+	//if ( !game->isVR ) qglFlush(); // koz check this
 	qglFlush();
-
 	// we may choose to sync to the swapbuffers before the next frame
 
 	// stop rendering on this thread
@@ -560,7 +518,8 @@ void RB_ExecuteBackEndCommands( const emptyCommand_t *cmds ) {
 	// If we have a stereo pixel format, this will draw to both
 	// the back left and back right buffers, which will have a
 	// performance penalty.
-	qglDrawBuffer( GL_BACK );
+	
+	if ( !vr->useFBO ) glDrawBuffer( GL_BACK ); // Koz
 
 	for ( ; cmds != NULL; cmds = (const emptyCommand_t *)cmds->next ) {
 		switch ( cmds->commandId ) {
@@ -596,8 +555,8 @@ void RB_ExecuteBackEndCommands( const emptyCommand_t *cmds ) {
 	// Fix for the steam overlay not showing up while in game without Shell/Debug/Console/Menu also rendering
 	qglColorMask( 1, 1, 1, 1 );
 
+	//if ( !game->isVR ) qglFlush(); // koz check this
 	qglFlush();
-
 	// stop rendering on this thread
 	uint64 backEndFinishTime = Sys_Microseconds();
 	backEnd.pc.totalMicroSec = backEndFinishTime - backEndStartTime;

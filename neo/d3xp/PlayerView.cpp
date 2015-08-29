@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #pragma hdrstop
 
 #include "Game_local.h"
+#include "vr\Vr.h"
 
 // _D3XP : rename all gameLocal.time to gameLocal.slow.time for merge!
 
@@ -712,6 +713,10 @@ void idPlayerView::RenderPlayerView( idMenuHandler_HUD * hudManager ) {
 	const renderView_t *view = player->GetRenderView();
 	if ( renderSystem->GetStereo3DMode() != STEREO3D_OFF ) {
 		// render both eye views each frame on the PC
+		
+		// Koz
+		if ( game->isVR ) vr->FrameStart( idLib::frameNumber );
+
 		for ( int eye = 1 ; eye >= -1 ; eye -= 2 ) {
 			EmitStereoEyeView( eye, hudManager );
 		}

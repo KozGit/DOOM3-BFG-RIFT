@@ -313,6 +313,5 @@ public:
 
 extern idCommon *		common;
 
-extern bool hasHMD, hasOculusRift, hasHillcrest, hasVR920Tracker;
 
 #endif /* !__COMMON_H__ */

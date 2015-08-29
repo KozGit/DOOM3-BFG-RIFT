@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../../idlib/precompiled.h"
 
 #include "../tr_local.h"
+#include "vr\Vr.h"
 
 /*
 ====================
@@ -230,11 +231,15 @@ may touch, including the editor.
 void GL_SetDefaultState() {
 	RENDERLOG_PRINTF( "--- GL_SetDefaultState ---\n" );
 
-	qglClearDepth( 1.0f );
+	glClearDepth( 1.0f );
 
 	// make sure our GL state vector is set correctly
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
 	GL_State( 0, true );
+
+	// RB begin
+	Framebuffer::BindDefault();
+	// RB end
 
 	// These are changed by GL_Cull
 	qglCullFace( GL_FRONT_AND_BACK );
@@ -251,15 +256,21 @@ void GL_SetDefaultState() {
 	qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 
 	// These should never be changed
-	qglShadeModel( GL_SMOOTH );
+	// DG: deprecated in opengl 3.2 and not needed because we don't do fixed function pipeline
+	// glShadeModel( GL_SMOOTH );
+	// DG end
 	qglEnable( GL_DEPTH_TEST );
 	qglEnable( GL_BLEND );
 	qglEnable( GL_SCISSOR_TEST );
-	qglDrawBuffer( GL_BACK );
-	qglReadBuffer( GL_BACK );
 
-	if ( r_useScissor.GetBool() ) {
-		qglScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
+	if ( vr->useFBO )
+	{
+		globalFramebuffers.primaryFBO->Bind();
+	}
+	
+	if ( r_useScissor.GetBool() )
+	{
+		glScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
 	}
 }
 

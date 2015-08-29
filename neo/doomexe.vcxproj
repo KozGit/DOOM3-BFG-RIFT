@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -32,16 +32,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -97,12 +100,14 @@
     <Link>
       <GenerateDebugInformation Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateDebugInformation>
       <GenerateDebugInformation Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">true</GenerateDebugInformation>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovr.lib;libfreespace.lib;avformat.lib;avcodec.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovr.lib;libfreespace.lib;avformat.lib;avcodec.lib;swscale.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\ffmpeg32\lib\;..\dependencies\libfreespace\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;$(SolutionDir)..\build\$(PlatformName)\Release\;..\dependencies\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\ffmpeg32\lib\;..\dependencies\libfreespace\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;libovr.lib;libfreespace.lib;avformat.lib;avcodec.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;libovr.lib;avformat.lib;avcodec.lib;swscale.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;E:\DOOM-3-BFG-VR\trunk\dependencies\LibOVR\Lib\Windows\Win32\Release\VS2013;..\dependencies\ffmpeg32\lib\;..\dependencies\libfreespace\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;$(SolutionDir)..\build\$(PlatformName)\Release\;E:\DOOM-3-BFG-VR\trunk\dependencies\LibOVR\Lib\Windows\Win32\Release\VS2013;..\dependencies\ffmpeg32\lib\;..\dependencies\libfreespace\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <OptimizeReferences Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</OptimizeReferences>
       <OptimizeReferences Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">false</OptimizeReferences>
+      <ImageHasSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Retail|Win32'">false</ImageHasSafeExceptionHandlers>
+      <ImageHasSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ImageHasSafeExceptionHandlers>
     </Link>
     <Deploy />
     <Deploy />
@@ -111,7 +116,7 @@
     <ClCompile />
     <ClCompile>
       <TreatWarningAsError Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</TreatWarningAsError>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\OculusSDK\LibOVR\Include\;..\dependencies\OculusSDK\LibOVR\Src\;..\dependencies\LibOVR\Src\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Include\;..\dependencies\LibOVR\Src\;..\dependencies\LibOVR\Include\;..\dependencies\ffmpeg32\Include\;..\dependencies\ffmpeg32\Include\libswscale\;..\dependencies\ffmpeg32\Include\libavformat\;..\dependencies\ffmpeg32\Include\libavdevice\;..\dependencies\ffmpeg32\Include\libavcodec\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_INLINEDEBUG;VRPN_CLIENT_ONLY;USE_FFMPEG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile>
@@ -140,9 +145,10 @@
     </Manifest>
     <Link />
     <Link>
-      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;quat.lib;vrpn.lib;libovrd.lib;avcodec.lib;avformat.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\OculusSDK\LibOVR\Lib\$(Platform)\VS2010\;..\dependencies\ffmpeg32\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xinput.lib;dbghelp.lib;dinput8.lib;dsound.lib;dxguid.lib;DxErr.lib;glu32.lib;iphlpapi.lib;odbc32.lib;odbccp32.lib;opengl32.lib;winmm.lib;wsock32.lib;x3daudio.lib;libovr.lib;avcodec.lib;avformat.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">E:\DOOM-3-BFG-VR\trunk\dependencies\LibOVR\Lib\Windows\Win32\Release\VS2013;$(DXSDK_DIR)\Lib\x86\;$(SolutionDir)..\build\$(PlatformName)\$(Configuration)\;..\dependencies\ffmpeg32\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">libcmtd.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImageHasSafeExceptionHandlers Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -186,9 +192,7 @@
     <ClInclude Include="framework\Unzip.h" />
     <ClInclude Include="framework\UsercmdGen.h" />
     <ClInclude Include="framework\Zip.h" />
-    <ClInclude Include="sys\win32\in_motion_sensor.h" />
-    <ClInclude Include="sys\win32\MahonyAHRS.h" />
-    <ClInclude Include="sys\win32\vr920.h" />
+    <ClInclude Include="renderer\Framebuffer.h" />
     <ClInclude Include="sys\win32\win_nanoafx.h" />
     <ClInclude Include="renderer\AutoRender.h" />
     <ClInclude Include="renderer\AutoRenderBink.h" />
@@ -308,6 +312,8 @@
     <ClInclude Include="ui\UserInterfaceLocal.h" />
     <ClInclude Include="ui\Window.h" />
     <ClInclude Include="ui\Winvar.h" />
+    <ClInclude Include="vr\Vr.h" />
+    <ClInclude Include="vr\Vr_Hmd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="aas\AASFile.cpp" />
@@ -374,6 +380,7 @@
     <ClCompile Include="renderer\DXT\DXTEncoder.cpp" />
     <ClCompile Include="renderer\DXT\DXTEncoder_SSE2.cpp" />
     <ClCompile Include="renderer\Font.cpp" />
+    <ClCompile Include="renderer\Framebuffer.cpp" />
     <ClCompile Include="renderer\GLMatrix.cpp" />
     <ClCompile Include="renderer\GuiModel.cpp" />
     <ClCompile Include="renderer\Image_files.cpp" />
@@ -495,9 +502,6 @@
     <ClCompile Include="sound\XAudio2\XA2_SoundSample.cpp" />
     <ClCompile Include="sound\XAudio2\XA2_SoundVoice.cpp" />
     <ClCompile Include="sys\sys_voicechat.cpp" />
-    <ClCompile Include="sys\win32\in_motion_sensor.cpp" />
-    <ClCompile Include="sys\win32\MahonyAHRS.cpp" />
-    <ClCompile Include="sys\win32\vr920.cpp" />
     <ClCompile Include="sys\win32\win_achievements.cpp" />
     <ClCompile Include="sys\win32\win_cpu.cpp" />
     <ClCompile Include="sys\win32\win_glimp.cpp" />
@@ -532,6 +536,8 @@
     <ClCompile Include="ui\UserInterface.cpp" />
     <ClCompile Include="ui\Window.cpp" />
     <ClCompile Include="ui\Winvar.cpp" />
+    <ClCompile Include="vr\Vr.cpp" />
+    <ClCompile Include="vr\Vr_Gl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="sys\win32\rc\res\doom.ico" />

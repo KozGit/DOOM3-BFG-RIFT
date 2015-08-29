@@ -44,7 +44,7 @@ If you have questions concerning this license or the applicable additional terms
 
 #include "../sys/sys_savegame.h"
 
-#include "../sys/win32/in_motion_sensor.h"
+#include "../vr/vr.h"
 
 #if defined( _DEBUG )
 	#define BUILD_DEBUG "-debug"
@@ -237,8 +237,11 @@ void idCommonLocal::ParseCommandLine( int argc, const char * const * argv ) {
 	// API says no program path
 	for ( i = 0; i < argc; i++ ) {
 		if ( idStr::Icmp( argv[ i ], "-vr" ) == 0 ) {
-			hasHMD = true;
-			hasOculusRift = true;
+		// koz begin
+		{
+			vr_enable.SetBool( true );
+		}
+		// koz end
 		} else if ( idStr::Icmp( argv[ i ], "+connect_lobby" ) == 0 ) {
 			// Handle Steam bootable invites.
 			session->HandleBootableInvite( _atoi64( argv[ i + 1 ] ) );
@@ -371,12 +374,8 @@ void idCommonLocal::WriteConfiguration() {
 	bool developer = com_developer.GetBool();
 	com_developer.SetBool( false );
 
-	if (hasOculusRift) {
+	if ( vr->hasOculusRift ) {
 		WriteConfigToFile( "oculus_config.cfg" );
-	} else if (hasVR920Tracker) {
-		WriteConfigToFile( "vuzix_config.cfg" );
-	} else if (hasHillcrest) {
-		WriteConfigToFile( "hillcrest_config.cfg" );
 	} else {
 		WriteConfigToFile( CONFIG_FILE );
 	}
@@ -1125,7 +1124,9 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 
 		//Carl: init the Virtual Reality head tracking, detect any connected HMDs, and read display parameters
 		//this needs to happen before the cfg files are loaded.
-		IN_MotionSensor_Init();
+		
+		// Koz
+		vr->HMDInit(); // Koz init the HMD.
 
 
 		// exec the startup scripts
@@ -1138,21 +1139,13 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 			cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec " CONFIG_FILE "\n" );
 		}
 #endif
-		if (hasOculusRift) {
+		if (vr->hasOculusRift) {
 			cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec oculus_default.cfg\n" );
-		} else if (hasVR920Tracker) {
-			cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec vuzix_default.cfg\n" );
-		} else if (hasHillcrest) {
-			cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec hillcrest_default.cfg\n" );
-		}
+		} 
 		if ( !SafeMode() && !g_demoMode.GetBool() ) {
-			if (hasOculusRift) {
+			if (vr->hasOculusRift) {
 				cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec oculus_config.cfg\n" );
-			} else if (hasVR920Tracker) {
-				cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec vuzix_config.cfg\n" );
-			} else if (hasHillcrest) {
-				cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec hillcrest_config.cfg\n" );
-			}
+			} 
 		}
 
 		cmdSystem->BufferCommandText( CMD_EXEC_APPEND, "exec autoexec.cfg\n" );
@@ -1178,6 +1171,14 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 
 		// initialize the renderSystem data structures
 		renderSystem->Init();
+
+		// Koz begin
+		// Create the Oculus distortion meshes. 
+		// GL must be initialized to do this.
+		if ( vr->hasOculusRift )
+		{
+			vr->HMDInitializeDistortion();
+		}
 
 		whiteMaterial = declManager->FindMaterial( "_white" );
 
@@ -1753,9 +1754,20 @@ void idCommonLocal::PerformGameSwitch() {
 		
 	} else if ( idealCurrentGame == DOOM3_BFG ) {
 		DoomLib::Interface.Shutdown();
-		com_engineHz_denominator = 100LL * com_engineHz.GetFloat();
-		com_engineHz_latched = com_engineHz.GetFloat();
-		
+
+		// koz behin
+		if ( vr->hasHMD ) 
+		{
+			com_engineHz_denominator = 100LL * (vr->hmdHz);
+			com_engineHz_latched = (vr->hmdHz);
+		}
+		else
+		{
+			com_engineHz_denominator = 100LL * com_engineHz.GetFloat();
+			com_engineHz_latched = com_engineHz.GetFloat();
+		}
+		// koz end
+
 		// Don't MoveToPressStart if we have an invite, we need to go
 		// directly to the lobby.
 		if ( session->GetState() <= idSession::IDLE ) {

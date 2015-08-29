@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #pragma hdrstop
 
 #include "Game_local.h"
+#include "vr\Vr.h"
 
 #ifdef GAME_DLL
 
@@ -2680,12 +2681,15 @@ Calculates the horizontal and vertical field of view based on a horizontal field
 void idGameLocal::CalcFov( float base_fov, float &fov_x, float &fov_y ) const {
 	const int width = renderSystem->GetWidth();
 	const int height = renderSystem->GetHeight();
-	if ( width == height ) {
-		// this is the Rift, so don't mess with our aspect ratio corrections
-		fov_x = base_fov;
-		fov_y = base_fov;
+	
+	//Koz begin
+	if ( game->isVR )
+	{
+		fov_x = vr->hmdFovX;
+		fov_y = vr->hmdFovY;
 		return;
 	}
+	// Koz end
 
 	// Calculate the fov_y based on an ideal aspect ratio
 	const float ideal_ratio_x = 16.0f;

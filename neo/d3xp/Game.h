@@ -159,6 +159,12 @@ public:
 	virtual bool				IsPDAOpen() const = 0;
 	virtual bool				IsPlayerChatting() const = 0;
 	
+	// Koz begin
+	// VR State
+	bool						isVR = 0;
+	// Koz end
+
+
 	// Creates leaderboards for each map/mode defined.
 	virtual void				Leaderboards_Init() = 0;
 	virtual void				Leaderboards_Shutdown() = 0;

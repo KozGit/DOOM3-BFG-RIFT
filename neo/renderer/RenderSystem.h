@@ -48,11 +48,7 @@ enum stereo3DMode_t {
 	STEREO3D_SIDE_BY_SIDE,
 
 	STEREO3D_INTERLACED,
-
-	// Vuzix/Icuiti VR920, with updated firmware, freezeframe 3D mode
-	// alternates frames for each eye, with a USB signal saying which eye it is for
-	STEREO3D_VR920,
-
+	
 	// OpenGL quad buffer
 	STEREO3D_QUAD_BUFFER,
 
@@ -60,7 +56,13 @@ enum stereo3DMode_t {
 	// On the PC this can be configured as a custom video timing, but
 	// it definitely isn't a consumer level task.  The quad_buffer
 	// support can handle 720P-3D with apropriate driver support.
-	STEREO3D_HDMI_720
+	STEREO3D_HDMI_720,
+
+	// Koz begin
+	// Only used when VR is active, will not be saved.
+	STEREO3D_HMD
+	// KOz end
+
 };
 
 typedef enum {
@@ -128,6 +130,12 @@ struct glconfig_t {
 	bool				occlusionQueryAvailable;
 	bool				debugOutputAvailable;
 	bool				swapControlTearAvailable;
+
+	// RB Begin
+	bool				framebufferObjectAvailable;
+	int					maxRenderbufferSize;
+	int					maxColorAttachments;
+	// RB end
 
 	stereo3DMode_t		stereo3Dmode;
 	int					nativeScreenWidth; // this is the native screen width resolution of the renderer
@@ -199,6 +207,11 @@ public:
 	virtual bool			IsFullScreen() const = 0;
 	virtual int				GetWidth() const = 0;
 	virtual int				GetHeight() const = 0;
+
+	// Koz begin
+	virtual int				GetNativeWidth() const = 0;
+	virtual int				GetNativeHeight() const = 0;
+	// Koz end
 
 	// return w/h of a single pixel. This will be 1.0 for normal cases.
 	// A side-by-side stereo 3D frame will have a pixel aspect of 0.5.

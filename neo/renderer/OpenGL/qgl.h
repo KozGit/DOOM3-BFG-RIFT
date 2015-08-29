@@ -85,6 +85,21 @@ extern PFNGLUNMAPBUFFERARBPROC				qglUnmapBufferARB;
 extern PFNGLGETBUFFERPARAMETERIVARBPROC		qglGetBufferParameterivARB;
 extern PFNGLGETBUFFERPOINTERVARBPROC		qglGetBufferPointervARB;
 
+//koz begin hack support into qgl for framebuffers
+extern PFNGLBINDFRAMEBUFFEREXTPROC					qglBindFramebuffer;
+extern PFNGLBINDRENDERBUFFEREXTPROC					qglBindRenderbuffer;
+extern PFNGLFRAMEBUFFERTEXTURE2DEXTPROC				qglFramebufferTexture2D;
+extern PFNGLBLITFRAMEBUFFEREXTPROC					qglBlitFramebuffer;
+extern PFNGLGENFRAMEBUFFERSEXTPROC					qglGenFramebuffers;
+extern PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC			qglFramebufferRenderbuffer;
+extern PFNGLDRAWBUFFERSARBPROC						qglDrawBuffers;
+extern PFNGLGENRENDERBUFFERSEXTPROC					qglGenRenderbuffers;
+extern PFNGLRENDERBUFFERSTORAGEMULTISAMPLEEXTPROC	qglRenderbufferStorageMultisample;
+extern PFNGLRENDERBUFFERSTORAGEEXTPROC				qglRenderbufferStorage;
+extern PFNGLFRAMEBUFFERTEXTURELAYEREXTPROC			qglFramebufferTextureLayer;
+extern PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC			qglCheckFramebufferStatus;
+// koz end
+
 // GL_ARB_map_buffer_Range
 extern PFNGLMAPBUFFERRANGEPROC				qglMapBufferRange;
 
@@ -512,6 +527,20 @@ extern  void ( APIENTRY * qglVertex4sv )(const GLshort *v);
 extern  void ( APIENTRY * qglVertexPointer )(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
 extern  void ( APIENTRY * qglViewport )(GLint x, GLint y, GLsizei width, GLsizei height);
 
+//koz begin hack support into qgl for framebuffers
+extern  void ( APIENTRY * qglBindFramebuffer) (GLenum target, GLuint framebuffer);
+extern  void ( APIENTRY * qglBindRenderbuffer) (GLenum target, GLuint renderbuffer);
+extern  void ( APIENTRY * qglFramebufferTexture2D ) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+extern  void ( APIENTRY * qglBlitFramebuffer) (GLint srcX0, GLint srcY0, GLint srcX1, GLint srcY1, GLint dstX0, GLint dstY0, GLint dstX1, GLint dstY1, GLbitfield mask, GLenum filter);
+extern  void ( APIENTRY * qglGenFramebuffers) (GLsizei n, GLuint* framebuffers);
+extern  void ( APIENTRY * qglFramebufferRenderbuffer)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+extern  void ( APIENTRY * qglDrawBuffers) (GLsizei n, const GLenum* bufs);
+extern  void ( APIENTRY * qglGenRenderbuffers) (GLsizei n, GLuint* renderbuffers);
+extern  void ( APIENTRY * qglRenderbufferStorageMultisample) (GLenum target, GLsizei samples, GLenum internalformat, GLsizei width, GLsizei height);
+extern  void ( APIENTRY * qglRenderbufferStorage) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+extern  void ( APIENTRY * qglFramebufferTextureLayer) (GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
+extern  GLenum ( APIENTRY * qglCheckFramebufferStatus) (GLenum target);
+// koz end
 
 extern  int   ( WINAPI * qwglChoosePixelFormat )(HDC, CONST PIXELFORMATDESCRIPTOR *);
 extern  int   ( WINAPI * qwglDescribePixelFormat) (HDC, int, UINT, LPPIXELFORMATDESCRIPTOR);

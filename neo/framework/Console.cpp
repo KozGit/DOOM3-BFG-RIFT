@@ -31,6 +31,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "ConsoleHistory.h"
 #include "../renderer/ResolutionScale.h"
 #include "Common_local.h"
+#include "..\dependencies\LibOVR\Include\OVR_CAPI.h"
+#include "vr\Vr.h"
 
 #define	CON_TEXTSIZE			0x30000
 #define	NUM_CON_TIMES			4
@@ -38,6 +40,9 @@ If you have questions concerning this license or the applicable additional terms
 #define CONSOLE_REPEAT			100
 
 #define	COMMAND_HISTORY			64
+
+// Koz
+idCVar vr_perfHud( "vr_perfHud", "0", CVAR_INTEGER, "HMD perf HUD.\n 0 = off\n 1 = latency\n 2 = timing\n 3 =timing\n 4 = version\n ", 0 , 4 );
 
 struct overlayText_t {
 	idStr			text;
@@ -1128,6 +1133,14 @@ void idConsoleLocal::Draw( bool forceFullScreen ) {
 	}
 	DrawOverlayText( lefty, righty, centery );
 	DrawDebugGraphs();
+
+	// koz
+	if ( vr_perfHud.IsModified() )
+	{
+		vr_perfHud.ClearModified();
+		int perfMode = vr_perfHud.GetInteger();
+		ovr_SetInt( vr->hmd, "PerfHudMode", perfMode );
+	}
 }
 
 /*
