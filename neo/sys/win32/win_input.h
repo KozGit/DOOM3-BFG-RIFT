@@ -36,9 +36,9 @@ If you have questions concerning this license or the applicable additional terms
 
 
 #include <Xinput.h>
-#pragma comment(lib, "..\\dependencies\\libfreespace\\lib\\libfreespace.lib") 
+//#pragma comment(lib, "..\\dependencies\\libfreespace\\lib\\libfreespace.lib") 
 
-#include "../../../dependencies/libfreespace/include/freespace/freespace.h"
+//#include "../../../dependencies/libfreespace/include/freespace/freespace.h"
 
 
 

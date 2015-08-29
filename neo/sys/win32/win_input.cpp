@@ -185,17 +185,7 @@ void IN_InitDirectInput() {
     }
 }
 
-/*
-===============
-IN_InitIMUInput
-===============
-tmek
-*/
 
-void IN_InitIMUInput() {
-	common->Printf( "Initializing IMU input...\n" );
-	common->Printf( "Using libfreespace %s\n", freespace_version());
-}
 
 /*
 ========================
@@ -382,9 +372,7 @@ void Sys_InitInput() {
 		common->Printf ("Mouse control not active.\n");
 	}
 	IN_StartupKeyboard();
-
-	IN_InitIMUInput();
-
+		
 	common->Printf ("------------------------------------\n");
 	win32.in_mouse.ClearModified();
 }

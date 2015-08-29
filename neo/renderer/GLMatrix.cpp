@@ -354,6 +354,8 @@ idCVar r_centerY( "r_centerY", "0", CVAR_FLOAT, "projection matrix center adjust
 
 void R_SetupProjectionMatrix( viewDef_t* viewDef )
 {
+	int pEye = viewDef->renderView.viewEyeBuffer == -1 ? 0 : 1;
+		
 	// random jittering is usefull when multiple
 	// frames are going to be blended together
 	// for motion blurred anti-aliasing
@@ -382,7 +384,7 @@ void R_SetupProjectionMatrix( viewDef_t* viewDef )
 	if ( game->isVR )
 	{
 
-		int pEye = viewDef->renderView.viewEyeBuffer == -1 ? 0 : 1;
+		
 
 		ymax = zNear * vr->hmdEye[pEye].eyeFov.UpTan;
 		ymin = -zNear * vr->hmdEye[pEye].eyeFov.DownTan;

@@ -60,14 +60,6 @@ public:
 			
 	void				FrameStart( int index );
 	
-	void				MSAAResolve( void );
-	
-	idVec3				lastViewOrigin;
-	idMat3				lastViewAxis;
-	float				lastHMDYaw;
-	float				lastHMDPitch;
-	float				lastHMDRoll;
-
 	float				angles[3];
 	
 	int					hmdWidth;
@@ -92,8 +84,6 @@ public:
 
 	float				hmdFovX;
 	float				hmdFovY;
-	float				hmdPixelScale;
-	float				hmdAspect;
 	hmdEye_t			hmdEye[2];
 		
 	float				oculusIPD;
@@ -131,10 +121,6 @@ extern idCVar	vr_useOculusProfile;
 extern idCVar	vr_manualIPD;
 extern idCVar	vr_manualHeight;
 
-extern idCVar	vr_showBody;
-extern idCVar	vr_viewModelArms;
-extern idCVar	vr_disableWeaponAnimation;
-extern idCVar	vr_headKick;
 
 extern idCVar	vr_guiScale; 
 extern idCVar	vr_guiSeparation;

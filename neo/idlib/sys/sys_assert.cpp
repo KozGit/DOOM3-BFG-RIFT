@@ -75,7 +75,7 @@ bool AssertFailed( const char * file, int line, const char * expression ) {
 
 	idLib::Warning( "ASSERTION FAILED! %s(%d): '%s'", file, line, expression );
 
-	if ( IsDebuggerPresent() || com_assertOutOfDebugger.GetBool() ) {
+	if ( IsDebuggerPresent() && com_assertOutOfDebugger.GetBool() ) {
 			__debugbreak();
 	}
 

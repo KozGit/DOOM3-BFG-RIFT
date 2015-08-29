@@ -21,8 +21,7 @@
 idCVar vr_trackingPredictionAuto( "vr_useAutoTrackingPrediction", "1", CVAR_BOOL | CVAR_ARCHIVE | CVAR_GAME, "Use SDK tracking prediction.\n 1 = Auto, 0 = User defined." );
 idCVar vr_trackingPredictionUserDefined( "vr_trackingPredictionUserDefined", "50", CVAR_FLOAT | CVAR_ARCHIVE | CVAR_GAME, "User defined tracking prediction in ms." );
 idCVar vr_pixelDensity( "vr_pixelDensity", "1.25", CVAR_FLOAT | CVAR_ARCHIVE | CVAR_GAME, "" );
-idCVar vr_lowPersistence( "vr_lowPersistence", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_GAME, "Enable low persistence. 0 = off 1 = on" );
-idCVar vr_FBOEnabled( "vr_FBOEnabled", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_RENDERER, "Use FBO rendering path." );
+idCVar vr_FBOEnabled( "vr_FBOEnabled", "0", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_RENDERER, "Use FBO rendering path." );
 idCVar vr_FBOAAmode( "vr_FBOAAmode", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_RENDERER, "Antialiasing mode. 0 = Disabled 1 = MSAA 2= FXAA\n" );
 idCVar vr_enable( "vr_enable", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_GAME, "Enable VR mode. 0 = Disabled 1 = Enabled." );
 idCVar vr_useOculusProfile( "vr_useOculusProfile", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_GAME, "Use Oculus Profile values. 0 = use user defined profile, 1 = use Oculus profile." );
@@ -32,12 +31,6 @@ idCVar vr_manualHeight( "vr_manualHeight", "70", CVAR_FLOAT | CVAR_ARCHIVE | CVA
 idCVar vr_guiScale( "vr_guiScale", "1", CVAR_FLOAT | CVAR_RENDERER | CVAR_ARCHIVE, "scale reduction factor for full screen menu/pda scale in VR", 0.0001f, 1.0f ); //koz allow scaling of full screen guis/pda
 idCVar vr_guiSeparation( "vr_guiSeparation", ".01", CVAR_FLOAT | CVAR_ARCHIVE, " Screen separation value for fullscreen guis." );
 
-idCVar vr_viewModelArms( "vr_viewModelArms", "0", CVAR_BOOL | CVAR_GAME | CVAR_ARCHIVE, " Display arms on view models in VR" );
-idCVar vr_disableWeaponAnimation( "vr_disableWeaponAnimation", "1", CVAR_BOOL | CVAR_ARCHIVE | CVAR_GAME, "Disable weapon animations in VR. ( 1 = disabled )" );
-idCVar vr_headKick( "vr_headKick", "0", CVAR_BOOL | CVAR_ARCHIVE | CVAR_GAME, "Damage can 'kick' the players view. 0 = Disabled in VR." );
-idCVar vr_showBody( "vr_showBody", "0", CVAR_BOOL | CVAR_ARCHIVE | CVAR_GAME, "Show player body in VR." );
-
-idCVar vr_hmdHz("vr_hmdHz", "0", CVAR_INTEGER | CVAR_RENDERER | CVAR_ARCHIVE, " HMD refresh rate. 0 = Auto, othewise freq in Hz." );
 
 // Koz end
 //===================================================================
@@ -80,12 +73,6 @@ iVr::iVr()
 		
 	hmdPositionTracked = false;
 	
-	lastViewOrigin = vec3_zero;
-	lastViewAxis = mat3_identity;
-	lastHMDYaw = 0.0f;
-	lastHMDPitch = 0.0f;
-	lastHMDRoll = 0.0f;
-			
 	VR_AAmode = 0;
 			
 	hmdWidth =  0;
@@ -191,7 +178,6 @@ void iVr::HMDInitializeDistortion()
 	game->isVR = true;
 	common->Printf( "VR Mode ENABLED.\n" );
 	
-
 	useFBO = vr_FBOEnabled.GetInteger() && glConfig.framebufferObjectAvailable;
 
 	if ( vr_FBOEnabled.GetInteger() && !glConfig.framebufferObjectAvailable )
@@ -206,25 +192,11 @@ void iVr::HMDInitializeDistortion()
 		
 		hmdEye[eye].eyeFov = vr->hmdDesc.DefaultEyeFov[eye];
 		hmdEye[eye].eyeRenderDesc = ovr_GetRenderDesc( vr->hmd, (ovrEyeType)eye, hmdEye[eye].eyeFov );
-
-		//oculus defaults znear 1 and positive zfar, id uses 1 znear, and the infinite z variation (-.999f) zfar
-		//during cinematics znear is crammed to .25, so create a second matrix for cinematics
-		ovrMatrix4f pEye = ovrMatrix4f_Projection( hmdEye[eye].eyeRenderDesc.Fov, 1.0f, -0.9999999999f, true ); // nzear was 0.01f zfar was 10000
-		//ovrMatrix4f pEyeCramZnear = ovrMatrix4f_Projection( hmdEye[eye].eyeRenderDesc.Fov, 0.25f, -0.999f, true ); // nzear was 0.01f zfar was 10000
-		int x, y;
-
-		for ( x = 0; x < 4; x++ )
-		{
-			for ( y = 0; y < 4; y++ )
-			{
-				hmdEye[eye].projectionRift[y * 4 + x] = pEye.M[x][y];	// convert oculus matrices to something this engine likes 
-			}
-		}
-
-		hmdEye[eye].projection.x.scale = 2.0f / (hmdEye[eye].eyeFov.LeftTan + hmdEye[eye].eyeFov.RightTan);
-		hmdEye[eye].projection.x.offset = (hmdEye[eye].eyeFov.LeftTan - hmdEye[eye].eyeFov.RightTan) * hmdEye[eye].projection.x.scale * 0.5f;
-		hmdEye[eye].projection.y.scale = 2.0f / (hmdEye[eye].eyeFov.UpTan + hmdEye[eye].eyeFov.DownTan);
-		hmdEye[eye].projection.y.offset = (hmdEye[eye].eyeFov.UpTan - hmdEye[eye].eyeFov.DownTan) * hmdEye[eye].projection.y.scale * 0.5f;
+		
+		//hmdEye[eye].projection.x.scale = 2.0f / (hmdEye[eye].eyeFov.LeftTan + hmdEye[eye].eyeFov.RightTan);
+		//hmdEye[eye].projection.x.offset = (hmdEye[eye].eyeFov.LeftTan - hmdEye[eye].eyeFov.RightTan) * hmdEye[eye].projection.x.scale * 0.5f;
+		//hmdEye[eye].projection.y.scale = 2.0f / (hmdEye[eye].eyeFov.UpTan + hmdEye[eye].eyeFov.DownTan);
+		//hmdEye[eye].projection.y.offset = (hmdEye[eye].eyeFov.UpTan - hmdEye[eye].eyeFov.DownTan) * hmdEye[eye].projection.y.scale * 0.5f;
 
 		hmdEye[eye].viewOffset = (idVec3)(-hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.x,
 			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.y,
@@ -263,8 +235,6 @@ void iVr::HMDInitializeDistortion()
 				{// enable FXAA
 
 					VR_AAmode = VR_AA_NONE;
-
-					
 				}
 
 				if ( VR_AAmode == VR_AA_MSAA )
@@ -376,8 +346,6 @@ void iVr::HMDInitializeDistortion()
 			rendertarget.w = renderSystem->GetNativeWidth() / 2;
 			rendertarget.h = renderSystem->GetNativeHeight();
 			hmdEye[eye].renderTarget = rendertarget;
-
-
 		}
 
 		viewport.Size.w = rendertarget.w;
@@ -392,10 +360,8 @@ void iVr::HMDInitializeDistortion()
 
 	hmdFovX = RAD2DEG( horizontalFullFovInRadians );
 	hmdFovY = RAD2DEG( 2.0 * atanf( combinedTanHalfFovVertical ) );
-	hmdAspect = combinedTanHalfFovHorizontal / combinedTanHalfFovVertical;
-	hmdPixelScale = 1;//ovrScale * vid.width / (float) hmd->Resolution.w;	
-
-	common->Warning( "Init Hmd FOV x,y = %f , %f. Aspect = %f, PixelScale = %f\n", hmdFovX, hmdFovY, hmdAspect, hmdPixelScale );
+	
+	common->Warning( "Init Hmd FOV x,y = %f , %f. \n", hmdFovX, hmdFovY );
 	common->Printf( "Creating oculus texture set width = %d height = %d.\n", hmdEye[0].renderTarget.w * 2, hmdEye[0].renderTarget.h );
 	
 	// create the swap texture sets 
