@@ -1369,8 +1369,9 @@ void GLimp_SwapBuffers() {
 			wglSwapIntervalEXT( interval );
 		}
 	}
-			
+	
 	qwglSwapBuffers( win32.hDC );
+
 }
 
 /*

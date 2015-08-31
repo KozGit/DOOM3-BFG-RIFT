@@ -9075,37 +9075,20 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 		static idVec3 hmdTranslation = vec3_zero;
 		
 		vr->HMDGetOrientation( roll, pitch, yaw, hmdTranslation );
-		// Koz end
-
-		//mmdanggg2: hooray for positional tracking being a bitch with math and stuff....
-		if ( vr->hmdPositionTracked  ){ // koz
+				
+		if ( vr->hmdPositionTracked  ){ 
 			if (pm_showBody.GetBool()) {
 				eyeHeightAboveRotationPoint = 16.5f;
 			}
 			else {
 				eyeHeightAboveRotationPoint = g_viewNodalZ.GetFloat();
 			}
-			eyeShiftRight = 0;
-			origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2];
-
-			float posTrackxAdj = 0.0f, posTrackyAdj = 0.0f;
-					
-
-			double yawRad = DEG2RAD(angles.yaw - 90); // -90deg because then it works
-			double angleCosine = cos(yawRad);
-			double angleSine = sin(yawRad);
-
-			
-			posTrackxAdj = hmdTranslation.x * angleCosine - hmdTranslation.y * angleSine; // rotate the vector so the users pos is aligned with the character
-			posTrackyAdj = hmdTranslation.x * angleSine + hmdTranslation.y * angleCosine;
-
-			idVec3 posTrackVec(posTrackxAdj, posTrackyAdj, hmdTranslation.z);
-
-			origin += posTrackVec; 
-
+			idAngles angYaw = idAngles( 0, angles.yaw - yaw, 0 );
+			angYaw.Normalize180();
+			origin += hmdTranslation * angYaw.ToMat3();
 			origin.z += eyeHeightAboveRotationPoint; // offset the height so it is on the neck
 		}
-		else 
+		else //position not being tracked, default to head+neck model.
 		{
 		// adjust the origin based on the camera nodal distance (eye distance from neck)
 		origin += axis[0]*g_viewNodalX.GetFloat() - axis[1]*eyeShiftRight + axis[2]*eyeHeightAboveRotationPoint;

@@ -121,6 +121,8 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 		qglBlitFramebuffer( 0, h, w, 0, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		qglBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 		//SwapBuffers( win32.hDC );
+
+		
 	}
 
 	Framebuffer::BindDefault();

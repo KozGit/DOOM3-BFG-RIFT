@@ -24,9 +24,8 @@ idCVar vr_pixelDensity( "vr_pixelDensity", "1.25", CVAR_FLOAT | CVAR_ARCHIVE | C
 idCVar vr_FBOEnabled( "vr_FBOEnabled", "0", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_RENDERER, "Use FBO rendering path." );
 idCVar vr_FBOAAmode( "vr_FBOAAmode", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_RENDERER, "Antialiasing mode. 0 = Disabled 1 = MSAA 2= FXAA\n" );
 idCVar vr_enable( "vr_enable", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_GAME, "Enable VR mode. 0 = Disabled 1 = Enabled." );
-idCVar vr_useOculusProfile( "vr_useOculusProfile", "1", CVAR_INTEGER | CVAR_ARCHIVE | CVAR_GAME, "Use Oculus Profile values. 0 = use user defined profile, 1 = use Oculus profile." );
-idCVar vr_manualIPD( "vr_manualIPD", "64", CVAR_FLOAT | CVAR_ARCHIVE | CVAR_GAME, "User defined IPD value in MM" );
-idCVar vr_manualHeight( "vr_manualHeight", "70", CVAR_FLOAT | CVAR_ARCHIVE | CVAR_GAME, "User defined player height in inches" );
+idCVar vr_ipdOverride( "vr_ipdOverride", "0", CVAR_BOOL | CVAR_ARCHIVE, "Override Oculus IPD. 0 = use Oculus IPD\n 1 = use Manual IPD." );
+idCVar vr_ipdManual( "vr_ipdManual", "64", CVAR_FLOAT | CVAR_ARCHIVE | CVAR_GAME, "User defined IPD value in MM" );
 
 idCVar vr_guiScale( "vr_guiScale", "1", CVAR_FLOAT | CVAR_RENDERER | CVAR_ARCHIVE, "scale reduction factor for full screen menu/pda scale in VR", 0.0001f, 1.0f ); //koz allow scaling of full screen guis/pda
 idCVar vr_guiSeparation( "vr_guiSeparation", ".01", CVAR_FLOAT | CVAR_ARCHIVE, " Screen separation value for fullscreen guis." );
@@ -202,8 +201,13 @@ void iVr::HMDInitializeDistortion()
 			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.y,
 			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.z);
 
-		common->Printf( "EYE %d px.scale %f, px.offset %f, py.scale %f, py.offset %f\n", eye, hmdEye[eye].projection.x.scale, hmdEye[eye].projection.x.offset, hmdEye[eye].projection.y.scale, hmdEye[eye].projection.y.offset );
-		common->Printf( "EYE %d viewoffset viewadjust x %f y %f z %f\n", eye, hmdEye[eye].viewOffset.x, hmdEye[eye].viewOffset.y, hmdEye[eye].viewOffset.z );
+		//common->Printf( "EYE %d px.scale %f, px.offset %f, py.scale %f, py.offset %f\n", eye, hmdEye[eye].projection.x.scale, hmdEye[eye].projection.x.offset, hmdEye[eye].projection.y.scale, hmdEye[eye].projection.y.offset );
+	//	common->Printf( "EYE %d viewoffset viewadjust x %f y %f z %f\n", eye, hmdEye[eye].viewOffset.x, hmdEye[eye].viewOffset.y, hmdEye[eye].viewOffset.z );
+		common->Printf( "EYE %d viewoffset viewadjust x %f y %f z %f\n", eye, 
+			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.x,
+			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.y,
+			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.z );
+		
 
 		ovrSizei rendertarget;
 		ovrRecti viewport = { 0, 0, 0, 0 };
@@ -362,7 +366,8 @@ void iVr::HMDInitializeDistortion()
 	hmdFovY = RAD2DEG( 2.0 * atanf( combinedTanHalfFovVertical ) );
 	
 	common->Warning( "Init Hmd FOV x,y = %f , %f. \n", hmdFovX, hmdFovY );
-	common->Printf( "Creating oculus texture set width = %d height = %d.\n", hmdEye[0].renderTarget.w * 2, hmdEye[0].renderTarget.h );
+	
+	common->Printf( "Creating oculus texture set width = %d height = %d.\n", hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h );
 	
 	// create the swap texture sets 
 	if ( (ovr_CreateSwapTextureSetGL( hmd, GL_SRGB8_ALPHA8, hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h,
@@ -397,11 +402,11 @@ void iVr::HMDInitializeDistortion()
 	qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
 	qglTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
 	
-	float as = vr->hmdWidth / vr->hmdHeight;
+	float as = (float)vr->hmdWidth / (float)vr->hmdHeight;
 	int ww = 800;
-	int wh = int( 800 / as );
-	
-	ovr_CreateMirrorTextureGL( hmd, GL_RGBA, ww, wh, (ovrTexture**) &oculusMirrorTexture );
+	int wh = int( (float) ww / as );
+	common->Printf( "Creating oculus mirror texture %d x %d\n", ww, wh );
+	ovr_CreateMirrorTextureGL( hmd, GL_SRGB8_ALPHA8, ww, wh, (ovrTexture**) &oculusMirrorTexture );
 	qglGenFramebuffers( 1, &oculusMirrorFboId );
 	qglBindFramebuffer( GL_READ_FRAMEBUFFER, oculusMirrorFboId );
 	qglFramebufferTexture2D( GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, oculusMirrorTexture->OGL.TexId, 0 );
@@ -421,6 +426,7 @@ void iVr::HMDInitializeDistortion()
 		
 	oculusLayer.Viewport[1] = oculusLayer.Viewport[0];
 		
+	Framebuffer::BindDefault();
 	wglSwapIntervalEXT( 0 );// make sure vsync is off.
 	r_swapInterval.SetModified();
 	

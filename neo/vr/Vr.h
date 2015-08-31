@@ -117,10 +117,10 @@ private:
 
 #endif
 
-extern idCVar	vr_useOculusProfile;
-extern idCVar	vr_manualIPD;
-extern idCVar	vr_manualHeight;
+extern idCVar	vr_ipdOverride;
+extern idCVar	vr_ipdManual;
 
+extern idCVar	vr_manualHeight;
 
 extern idCVar	vr_guiScale; 
 extern idCVar	vr_guiSeparation;

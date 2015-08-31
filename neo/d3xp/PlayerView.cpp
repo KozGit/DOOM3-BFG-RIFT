@@ -671,18 +671,41 @@ void idPlayerView::EmitStereoEyeView( const int eye, idMenuHandler_HUD * hudMana
 	}
 
 	renderView_t eyeView = *view;
+		
+	// koz begin
+	if ( game->isVR )
+	{
+	
+		int vreye = eye < 1 ? 0 : 1;
+		float separation = 0.0f;
 
-	const stereoDistances_t dists = CaclulateStereoDistances(
-		stereoRender_interOccularCentimeters.GetFloat(),
-		renderSystem->GetPhysicalScreenWidthInCentimeters(),
-		stereoRender_convergence.GetFloat(),
-		view->fov_x );
+		if ( vr_ipdOverride.GetBool() )
+		{
+			separation = ( vr_ipdManual.GetFloat() / 2 ) * 0.0393701;
+		}
+		else
+		{
+			// convert oculus IPD for this eye from meters to inches.
+			separation = vr->hmdEye[vreye].eyeRenderDesc.HmdToEyeViewOffset.x * 39.3701;
+		}
 
-	eyeView.vieworg += eye * dists.worldSeparation * eyeView.viewaxis[1];
-
-	eyeView.viewEyeBuffer = stereoRender_swapEyes.GetBool() ? eye : -eye;
-	eyeView.stereoScreenSeparation = eye * dists.screenSeparation;
-
+		eyeView.vieworg += separation * eyeView.viewaxis[1];
+		eyeView.stereoScreenSeparation = 0;
+		eyeView.viewEyeBuffer = stereoRender_swapEyes.GetBool() ? eye : -eye;
+	}
+	else
+	// koz end
+	{
+		const stereoDistances_t dists = CaclulateStereoDistances(
+			stereoRender_interOccularCentimeters.GetFloat(),
+			renderSystem->GetPhysicalScreenWidthInCentimeters(),
+			stereoRender_convergence.GetFloat(),
+			view->fov_x );
+		
+		eyeView.vieworg += eye * dists.worldSeparation * eyeView.viewaxis[1];
+		eyeView.viewEyeBuffer = stereoRender_swapEyes.GetBool() ? eye : -eye;
+		eyeView.stereoScreenSeparation = eye * dists.screenSeparation;
+	}
 	SingleView( &eyeView, hudManager );
 }
 

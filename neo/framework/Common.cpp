@@ -757,6 +757,8 @@ idCommonLocal::RenderSplash
 =================
 */
 void idCommonLocal::RenderSplash() {
+	if (game->isVR) return; // koz delete
+
 	const float sysWidth = renderSystem->GetWidth() * renderSystem->GetPixelAspect();
 	const float sysHeight = renderSystem->GetHeight();
 	const float sysAspect = sysWidth / sysHeight;
@@ -787,6 +789,8 @@ idCommonLocal::RenderBink
 =================
 */
 void idCommonLocal::RenderBink( const char * path ) {
+	if (game->isVR) return; // koz fix
+	
 	const float sysWidth = renderSystem->GetWidth() * renderSystem->GetPixelAspect();
 	const float sysHeight = renderSystem->GetHeight();
 	const float sysAspect = sysWidth / sysHeight;

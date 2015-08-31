@@ -726,20 +726,20 @@ void R_SetNewMode( const bool fullInit ) {
 		// koz begin
 		// koz if hmd detected, force a windowed mode for the oculus mirror texture.
 		if ( fullscreenMode <= 0 ) { // || vr->hasOculusRift ) {
-			common->Printf( "R_SetNewMode detected an Oculus Rift. Setting windowed mode %d x %d.\n", vr->hmdWidth / 2, vr->hmdHeight / 2 );
+			
 			
 			// use explicit position / size for window
 			int windowWidth = 0;
 			int windowHeight = 0;
-			/*
+			
 			if ( vr->hasOculusRift )
 			{
-				float as = vr->hmdWidth / vr->hmdHeight;
-				
+				float ar = (float)vr->hmdWidth / (float)vr->hmdHeight;
 				windowWidth = 800;
-				windowHeight = int ( 800 / as ) ;
+				windowHeight = int( (float)windowWidth / ar );
+				common->Printf( "R_SetNewMode detected an Oculus Rift. Setting windowed mode : %d x %d.\n", windowWidth, windowHeight );
 			}
-			else */
+			else 
 			{
 				windowWidth = r_windowWidth.GetInteger();
 				windowHeight = r_windowHeight.GetInteger();
@@ -753,7 +753,7 @@ void R_SetNewMode( const bool fullInit ) {
 
 			// may still be -1 to force a borderless window
 			parms.fullScreen = fullscreenMode;
-			parms.displayHz = 0;		// ignored
+			parms.displayHz = 75;		// ignored
 		} else {
 			// get the mode list for this monitor
 			idList<vidMode_t> modeList;
