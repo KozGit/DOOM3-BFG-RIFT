@@ -713,8 +713,8 @@ void R_SetNewMode( const bool fullInit ) {
 	// try up to three different configurations
 	
 	int fullscreenMode = r_fullscreen.GetInteger();
-
-//	if ( vr->hasOculusRift ) fullscreenMode = 0;
+		
+	// kos window style
 	
 	for ( int i = 0 ; i < 3 ; i++ ) {
 		if ( i == 0 && stereoRender_enable.GetInteger() != STEREO3D_QUAD_BUFFER ) {
@@ -725,9 +725,8 @@ void R_SetNewMode( const bool fullInit ) {
 
 		// koz begin
 		// koz if hmd detected, force a windowed mode for the oculus mirror texture.
-		if ( fullscreenMode <= 0 ) { // || vr->hasOculusRift ) {
-			
-			
+		if ( fullscreenMode <= 0 ) { 
+					
 			// use explicit position / size for window
 			int windowWidth = 0;
 			int windowHeight = 0;

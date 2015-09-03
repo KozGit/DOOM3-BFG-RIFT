@@ -30,6 +30,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../../idlib/precompiled.h"
 
 #include "../tr_local.h"
+#include "sys\win32\win_local.h"
 #include "vr\Vr.h"
 
 /*
@@ -272,6 +273,8 @@ void GL_SetDefaultState() {
 	{
 		glScissor( 0, 0, renderSystem->GetWidth(), renderSystem->GetHeight() );
 	}
+
+	wglSwapIntervalEXT( 0 );
 }
 
 /*

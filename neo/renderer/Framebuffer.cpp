@@ -97,13 +97,12 @@ void ResolveMSAA( void )
 
 		if ( globalFramebuffers.primaryFBO->IsMSAA() )
 		{	// primary FBO is MSAA enabled, resolve to secondary FBO to perform antialiasing before copy
-			globalFramebuffers.resolveFBO->Bind();
-			GL_Clear( true, true, true, STENCIL_SHADOW_TEST_VALUE, 0, 0, 0, 0 );
-			
+			//globalFramebuffers.resolveFBO->Bind();
+						
 			//qglClearColor( 0, 0, 0, 0 );
 			//qglClear( GL_COLOR_BUFFER_BIT );
 			
-			globalFramebuffers.primaryFBO->Bind();
+			//globalFramebuffers.primaryFBO->Bind();
 			qglBindFramebuffer( GL_READ_FRAMEBUFFER, globalFramebuffers.primaryFBO->GetFramebuffer() ); // bind primary FBO for read
 			qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, globalFramebuffers.resolveFBO->GetFramebuffer() );// bind resolve FBO for draw
 			qglBlitFramebuffer( 0, 0, globalFramebuffers.primaryFBO->GetWidth(), globalFramebuffers.primaryFBO->GetHeight(), 0, 0, globalFramebuffers.resolveFBO->GetWidth(), globalFramebuffers.resolveFBO->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST ); // blit from primary FBO to resolve MSAA antialiasing.

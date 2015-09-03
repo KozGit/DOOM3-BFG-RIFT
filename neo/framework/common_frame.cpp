@@ -372,11 +372,13 @@ void idCommonLocal::Frame() {
 		// This is the only place this is incremented
 		idLib::frameNumber++;
 
-		// Koz
+		// Koz delete 
+		/*
 		if ( game->isVR )
 		{
-			vr->FrameStart( idLib::frameNumber );
+			vr->FrameStart();
 		}
+		*/
 
 		// allow changing SIMD usage on the fly
 		if ( com_forceGenericSIMD.IsModified() ) {

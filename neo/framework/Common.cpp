@@ -757,8 +757,7 @@ idCommonLocal::RenderSplash
 =================
 */
 void idCommonLocal::RenderSplash() {
-	if (game->isVR) return; // koz delete
-
+	
 	const float sysWidth = renderSystem->GetWidth() * renderSystem->GetPixelAspect();
 	const float sysHeight = renderSystem->GetHeight();
 	const float sysAspect = sysWidth / sysHeight;
@@ -789,15 +788,14 @@ idCommonLocal::RenderBink
 =================
 */
 void idCommonLocal::RenderBink( const char * path ) {
-	if (game->isVR) return; // koz fix
-	
+		
 	const float sysWidth = renderSystem->GetWidth() * renderSystem->GetPixelAspect();
 	const float sysHeight = renderSystem->GetHeight();
 	const float sysAspect = sysWidth / sysHeight;
 	const float movieAspect = ( 16.0f / 9.0f );
 	const float imageWidth = SCREEN_WIDTH * movieAspect / sysAspect;
 	const float chop = 0.5f * ( SCREEN_WIDTH - imageWidth );
-
+	
 	idStr materialText;
 	materialText.Format( "{ translucent { videoMap %s } }", path );
 
@@ -1186,6 +1184,98 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 
 		whiteMaterial = declManager->FindMaterial( "_white" );
 
+		
+		// koz
+		// if the game is in vr,
+		// make the user look forward and press any key or button 
+		// so we can reset the view to forward.
+
+		if ( game->isVR )
+		{
+			splashScreen = declManager->FindMaterial( "_black" );
+			RenderSplash();
+			RenderSplash();
+			RenderSplash();
+
+			int	mouseEvents[MAX_MOUSE_EVENTS][2];
+			bool escapeEvent = false;
+			while ( !escapeEvent )
+			{
+				Sys_GenerateEvents();
+
+				// queue system events ready for polling
+				Sys_GetEvent();
+
+				// RB: allow to escape video by pressing anything
+				int numKeyEvents = Sys_PollKeyboardInputEvents();
+				if ( numKeyEvents > 0 )
+				{
+					
+					escapeEvent = true;
+					Sys_EndKeyboardInputEvents();
+				}
+
+				int numMouseEvents = Sys_PollMouseInputEvents( mouseEvents );
+				if ( numMouseEvents > 0 )
+				{
+					for ( int i = 0; i < numMouseEvents; i++ )
+					{
+						int action = mouseEvents[i][0];
+						switch ( action )
+						{
+						case M_ACTION1:
+						case M_ACTION2:
+						case M_ACTION3:
+						case M_ACTION4:
+						case M_ACTION5:
+						case M_ACTION6:
+						case M_ACTION7:
+						case M_ACTION8:
+							escapeEvent = true;
+							break;
+
+						default:	// some other undefined button
+							break;
+						}
+					}
+				}
+
+				int numJoystickEvents = Sys_PollJoystickInputEvents( 0 );
+				if ( numJoystickEvents > 0 )
+				{
+					for ( int i = 0; i < numJoystickEvents; i++ )
+					{
+						int action;
+						int value;
+
+						if ( Sys_ReturnJoystickInputEvent( i, action, value ) )
+						{
+							if ( action >= J_ACTION1 && action <= J_ACTION_MAX )
+							{
+								if ( value != 0 )
+								{
+									escapeEvent = true;
+									break;
+								}
+							}
+						}
+					}
+
+					Sys_EndJoystickInputEvents();
+				}
+
+				if ( escapeEvent )
+				{
+					break;
+				}
+
+				Sys_Sleep( 10 );
+			}
+
+			vr->HMDResetTrackingOrigin(); 
+
+		}
+
 		if ( idStr::Icmp( sys_lang.GetString(), ID_LANG_FRENCH ) == 0 ) {
 			// If the user specified french, we show french no matter what SKU
 			splashScreen = declManager->FindMaterial( "guis/assets/splash/legal_french" );
@@ -1196,7 +1286,7 @@ void idCommonLocal::Init( int argc, const char * const * argv, const char *cmdli
 			// Otherwise show it in english
 			splashScreen = declManager->FindMaterial( "guis/assets/splash/legal_english" );
 		}
-
+		
 		const int legalMinTime = 1000; //Carl: Don't force them to wait more than a second
 		const bool showVideo = ( !com_skipIntroVideos.GetBool () && fileSystem->UsingResourceFiles() );
 		if ( showVideo ) {

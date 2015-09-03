@@ -58,7 +58,9 @@ public:
 	void				HMDRender( idImage *leftCurrent, idImage *rightCurrent );
 	void				HMDResetTrackingOrigin( void );
 			
-	void				FrameStart( int index );
+	void				FrameStart( void );
+
+	uint				vrFrameNumber;
 	
 	float				angles[3];
 	

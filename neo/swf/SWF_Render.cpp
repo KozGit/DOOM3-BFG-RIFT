@@ -115,7 +115,19 @@ void idSWF::Render( idRenderSystem * gui, int time, bool isSplitscreen ) {
 	const float pixelAspect = renderSystem->GetPixelAspect();
 	const float sysWidth = renderSystem->GetWidth() * ( pixelAspect > 1.0f ? pixelAspect : 1.0f );
 	const float sysHeight = renderSystem->GetHeight() / ( pixelAspect < 1.0f ? pixelAspect : 1.0f );
-	float scale = swfScale * sysHeight / (float)frameHeight;
+	
+	// koz begin 
+	// in vr fit to width not height.
+	float scale = 0.0f;
+	if ( game->isVR )
+	{
+		scale = swfScale * sysWidth / (float)frameWidth;
+	}
+	else
+	{
+		scale = swfScale * sysHeight / (float)frameHeight;
+	}
+	// koz end
 
 	swfRenderState_t renderState;
 	renderState.stereoDepth = (stereoDepthType_t)mainspriteInstance->GetStereoDepth();

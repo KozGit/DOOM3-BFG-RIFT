@@ -69,7 +69,6 @@ typedef struct _hmdEye
 {
 
 	float				projectionRift[16];
-	idVec3				viewOffset;
 	eyeScaleOffset_t	projection;
 	ovrEyeRenderDesc	eyeRenderDesc;
 	ovrSizei			renderTarget;

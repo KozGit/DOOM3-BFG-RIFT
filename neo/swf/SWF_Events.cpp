@@ -386,7 +386,18 @@ bool idSWF::HandleEvent( const sysEvent_t * event ) {
 			const float pixelAspect = renderSystem->GetPixelAspect();
 			const float sysWidth = renderSystem->GetWidth() * ( pixelAspect > 1.0f ? pixelAspect : 1.0f );
 			const float sysHeight = renderSystem->GetHeight() / ( pixelAspect < 1.0f ? pixelAspect : 1.0f );
-			float scale = swfScale * sysHeight / (float)frameHeight;
+			// koz begin scale mouse into screen for vr
+			float scale = 0.0f;
+			if ( game->isVR )
+			{
+				scale = swfScale * sysWidth / (float)frameWidth;
+			}
+			else
+			{
+				scale = swfScale * sysHeight / (float)frameHeight;
+			}
+			// koz end
+
 			float invScale = 1.0f / scale;
 			float tx = 0.5f * ( sysWidth - ( frameWidth * scale ) );
 			float ty = 0.5f * ( sysHeight - ( frameHeight * scale ) );

@@ -29,14 +29,20 @@ eye textures: idImage leftCurrent, rightCurrent
 
 void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent ) 
 {
+	
+	extern ovrFrameTiming	hmdFrameTime;
+	static ovrLayerHeader	*layers = &oculusLayer.Header;
+	static ovrPosef			eyeRenderPose[2];
+	static ovrVector3f		viewOffset[2] = { hmdEye[0].eyeRenderDesc.HmdToEyeViewOffset, hmdEye[1].eyeRenderDesc.HmdToEyeViewOffset };
+	static ovrViewScaleDesc viewScaleDesc;
 
-	extern ovrFrameTiming hmdFrameTime;
-	
-	static int rposw,rposh ;
-	
-	rposw = renderSystem->GetWidth() ;
-	rposh = renderSystem->GetHeight();
-			
+	static GLint windowW = glConfig.nativeScreenWidth / 4;
+	static GLint windowH = glConfig.nativeScreenHeight / 4;
+	static GLint texW = oculusMirrorTexture->OGL.Header.TextureSize.w;
+	static GLint texH = oculusMirrorTexture->OGL.Header.TextureSize.h;
+	static GLint windowTexW = windowW + texW;
+	static GLint windowTexH = windowH + texH;
+
 	// increment the oculus texture swap chain indexes
 	for ( int i = 0; i < 2; i++ )
 	{
@@ -45,11 +51,12 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 			
 	renderProgManager.BindShader_PostProcess(); // pass thru shader
 		
+	//render stereoEye images into oculus textures.
+	//left eye
 	ovrGLTexture* tex = (ovrGLTexture*)&oculusTextureSet[0]->Textures[oculusTextureSet[0]->CurrentIndex];
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->OGL.TexId, 0 );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ocululsDepthTexID, 0 );
-
 	GL_ViewportAndScissor( 0, 0, tex->OGL.Header.TextureSize.w, tex->OGL.Header.TextureSize.h );
 	qglClearColor(0, 0, 0, 0 );
 	qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );	
@@ -62,6 +69,10 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
 	RB_DrawElementsWithCounters( &backEnd.unitSquareSurface ); // draw it
 
+	
+	//--------------------
+	//right eye
+	//--------------------
 	tex = (ovrGLTexture*)&oculusTextureSet[1]->Textures[oculusTextureSet[1]->CurrentIndex];
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->OGL.TexId, 0 );
@@ -78,33 +89,28 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	RB_DrawElementsWithCounters( &backEnd.unitSquareSurface ); // draw it
 	 
 	renderProgManager.Unbind();
-	
+		
+	// Submit frame/layer to oculus compositor
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0 );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
 
-			
-	// Submit frame with one layer we have.
-	ovrLayerHeader *layers = &oculusLayer.Header;
-	ovrPosef eyeRenderPose[2];
-	ovrVector3f viewOffset[2] = { hmdEye[0].eyeRenderDesc.HmdToEyeViewOffset, hmdEye[1].eyeRenderDesc.HmdToEyeViewOffset };
-	
 	ovr_CalcEyePoses( vr->hmdTrackingState.HeadPose.ThePose, viewOffset, eyeRenderPose ); 
-
-	ovrViewScaleDesc viewScaleDesc;
+		
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 0.0254f; // inches to meters
 	viewScaleDesc.HmdToEyeViewOffset[0] = hmdEye[0].eyeRenderDesc.HmdToEyeViewOffset;
 	viewScaleDesc.HmdToEyeViewOffset[1] = hmdEye[1].eyeRenderDesc.HmdToEyeViewOffset;
 	
 	oculusLayer.RenderPose[0] = eyeRenderPose[0];
 	oculusLayer.RenderPose[1] = eyeRenderPose[1];
-	const int beforeSubmit = Sys_Milliseconds();
-	ovrResult       result = ovr_SubmitFrame( hmd, 0, &viewScaleDesc, &layers, 1 );
+	
+	static int beforeSubmit = Sys_Milliseconds();
+	ovrResult result = ovr_SubmitFrame( hmd, 0, &viewScaleDesc, &layers, 1 );
 	if ( result != ovrSuccess )
 	{
 		common->Warning( "Vr_GL.cpp HMDRender : Failed to submit oculus layer.\n" );
 	}
-	const int afterSubmit = Sys_Milliseconds();
+	static int afterSubmit = Sys_Milliseconds();
 	
 	if ( vr_showOvrSubmitFrameTime.GetBool() )
 	{
@@ -112,20 +118,27 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	}
 	if ( vr->useFBO )
 	{
-
 		// Blit mirror texture to back buffer
 		qglBindFramebuffer( GL_READ_FRAMEBUFFER, oculusMirrorFboId );
 		qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
-		GLint w = oculusMirrorTexture->OGL.Header.TextureSize.w;
-		GLint h = oculusMirrorTexture->OGL.Header.TextureSize.h;
-		qglBlitFramebuffer( 0, h, w, 0, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+		qglBlitFramebuffer( 0, texH, texW, 0, windowW, windowH, windowTexW, windowTexH, GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		qglBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
-		//SwapBuffers( win32.hDC );
-
-		
 	}
-
-	Framebuffer::BindDefault();
-		
+	
+	// koz hack
+	// for some reason, vsync will not disable unless wglSwapIntervalEXT( 0 )
+	// is called at least once after ovr_SubmitFrame is called.
+	// (at least on the two Nvidia cards I have to test with.)
+	// this only seems to be the case when rendering to FBOs instead
+	// of the default framebuffer.
+	// if anyone has any ideas why this is, please tell!
+	
+	static int swapset = 0;
+	if ( swapset == 0 )
+	{
+		swapset = 1;
+		wglSwapIntervalEXT( 0 );
+	}
+	
 }
 

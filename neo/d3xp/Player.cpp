@@ -9084,7 +9084,7 @@ void idPlayer::GetViewPos( idVec3 &origin, idMat3 &axis ) const {
 				eyeHeightAboveRotationPoint = g_viewNodalZ.GetFloat();
 			}
 			idAngles angYaw = idAngles( 0, angles.yaw - yaw, 0 );
-			angYaw.Normalize180();
+			angYaw.Normalize360();
 			origin += hmdTranslation * angYaw.ToMat3();
 			origin.z += eyeHeightAboveRotationPoint; // offset the height so it is on the neck
 		}

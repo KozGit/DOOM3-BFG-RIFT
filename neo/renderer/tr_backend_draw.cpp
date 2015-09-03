@@ -2608,7 +2608,6 @@ void RB_DrawViewInternal( const viewDef_t * viewDef, const int stereoEye ) {
 		int	h = backEnd.viewDef->viewport.y2 - backEnd.viewDef->viewport.y1 + 1;
 
 		RENDERLOG_PRINTF( "Resolve to %i x %i buffer\n", w, h );
-
 		GL_SelectTexture( 0 );
 
 		// resolve the screen

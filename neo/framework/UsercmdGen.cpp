@@ -448,7 +448,7 @@ idVec3 imuAngles;
 void idUsercmdGenLocal::MotionSensorMove() {
 	static idVec3 hmdTranslation = vec3_zero;
 
-	if ( game->isVR) vr->HMDGetOrientation( imuAngles[ROLL], imuAngles[PITCH], imuAngles[YAW], hmdTranslation );
+	if ( game->isVR && ! game->Shell_IsActive() ) vr->HMDGetOrientation( imuAngles[ROLL], imuAngles[PITCH], imuAngles[YAW], hmdTranslation );
 }
 
 /*
@@ -1074,8 +1074,8 @@ void idUsercmdGenLocal::MakeCurrent() {
 	if ( game->isVR )
 	{
 		cmdangles = imuAngles;
-		cmdangles[YAW] += viewangles[YAW]; 
-		
+		cmdangles[YAW] += viewangles[YAW];
+			
 		if ( cmdangles[YAW] >= 180.0f ) cmdangles[YAW] -= 360.0f;
 		if ( cmdangles[YAW] <= -180.0f ) cmdangles[YAW] += 360.0f;
 	

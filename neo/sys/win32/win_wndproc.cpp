@@ -33,6 +33,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "../../renderer/tr_local.h"
 
 #include <Windowsx.h>
+#include "vr\Vr.h"
 
 LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam );
 
@@ -349,9 +350,31 @@ LONG WINAPI MainWndProc( HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam ) {
 				}
 			}
 
-			const int x = GET_X_LPARAM( lParam );
-			const int y = GET_Y_LPARAM( lParam );
+			int x = GET_X_LPARAM( lParam );
+			int y = GET_Y_LPARAM( lParam );
 
+			// koz
+			// scale the mouse coords to the hmd res instead of the mirror texture window res.
+			if ( game->isVR )
+			{
+				float width = renderSystem->GetWidth();
+				float height = renderSystem->GetHeight();
+				RECT rect;
+				if ( ::GetClientRect( win32.hWnd, &rect ) )
+				{
+					if ( rect.right > rect.left && rect.bottom > rect.top ) {
+						width = rect.right - rect.left;
+						height = rect.bottom - rect.top;
+					}
+				}
+				
+				float scalex = renderSystem->GetWidth() / width;
+				float scaley = renderSystem->GetHeight() / height;
+
+				x = int( (float)x * scalex );
+				y = int( (float)y * scaley );
+
+			}
 			// Generate an event
 			Sys_QueEvent( SE_MOUSE_ABSOLUTE, x, y, 0, NULL, 0 );
 			

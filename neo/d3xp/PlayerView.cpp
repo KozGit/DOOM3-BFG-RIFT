@@ -738,7 +738,12 @@ void idPlayerView::RenderPlayerView( idMenuHandler_HUD * hudManager ) {
 		// render both eye views each frame on the PC
 		
 		// Koz
-		if ( game->isVR ) vr->FrameStart( idLib::frameNumber );
+		
+		if ( game->isVR ) 
+		{
+			vr->vrFrameNumber++;
+			//vr->FrameStart();
+		}
 
 		for ( int eye = 1 ; eye >= -1 ; eye -= 2 ) {
 			EmitStereoEyeView( eye, hudManager );
