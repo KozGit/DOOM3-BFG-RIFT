@@ -682,7 +682,7 @@ void idPlayerView::EmitStereoEyeView( const int eye, idMenuHandler_HUD * hudMana
 		if ( vr_ipdOverride.GetBool() )
 		{
 			separation = ( vr_ipdManual.GetFloat() / 2 ) * 0.0393701;
-			separation = eye == 0 ? -separation : separation;
+			separation = vreye == 0 ? -separation : separation;
 		}
 		else
 		{
