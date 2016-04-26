@@ -2020,7 +2020,7 @@ void idPlayer::Spawn() {
 		weapon.GetEntity()->ForceAmmoInClip();
 	}
 
-	ovr_RecenterPose( vr->hmd ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
+	ovr_RecenterTrackingOrigin( vr->hmdSession ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
 
 }
 
@@ -2653,7 +2653,7 @@ void idPlayer::Restore( idRestoreGame *savefile ) {
 		}		
 	}
 
-	ovr_RecenterPose( vr->hmd ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
+	ovr_RecenterTrackingOrigin( vr->hmdSession ); // Koz reset hmd orientation  Koz fixme check if still appropriate here.
 }
 
 /*

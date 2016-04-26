@@ -33,6 +33,8 @@ If you have questions concerning this license or the applicable additional terms
 #include "..\dependencies\LibOVR\Include\OVR_CAPI_GL.h"
 #include "vr_hmd.h"
 #include "..\renderer\Framebuffer.h"
+#include "..\dependencies\LibOVR\Include\OVR_CAPI_Audio.h"
+
 
 
 #ifndef __VR_H__
@@ -53,6 +55,7 @@ public:
 	iVr();
 	
 	void				HMDInit( void );
+	void				HMDShutdown( void );
 	void				HMDInitializeDistortion( void );
 	void				HMDGetOrientation( float &roll, float &pitch, float &yaw, idVec3 &hmdPosition );
 	void				HMDRender( idImage *leftCurrent, idImage *rightCurrent );
@@ -79,7 +82,7 @@ public:
 	bool				hasHMD;
 	bool				hasOculusRift;
 	
-	ovrHmd				hmd;
+	ovrSession			hmdSession;
 	ovrGraphicsLuid		luid;
 
 	ovrHmdDesc			hmdDesc;
@@ -100,17 +103,29 @@ public:
 	idImage*			resolveFBOimage;
 	idImage*			fullscreenFBOimage;
 
-	ovrSwapTextureSet * oculusTextureSet[2];
+	ovrTextureSwapChain oculusSwapChain[2];
+	GLuint				oculusSwapChainTexId[2];
+	
 	GLuint				oculusFboId;
 	GLuint				ocululsDepthTexID;
-	ovrGLTexture*		oculusMirrorTexture;
+	
+	ovrMirrorTexture	oculusMirrorTexture;
+	GLuint				mirrorTexId;
+	
 	GLuint				oculusMirrorFboId;
+	int					mirrorW;
+	int					mirrorH;
 
 	ovrLayerEyeFov		oculusLayer;
 		
 	ovrTrackingState	hmdTrackingState;
-	ovrFrameTiming		hmdFrameTime;
+	double				hmdFrameTime;
 	bool				hmdPositionTracked;
+
+	GUID oculusGuid;
+	WCHAR oculusGuidStr[OVR_AUDIO_MAX_DEVICE_STR_SIZE];
+
+
 		
 	//---------------------------
 private:

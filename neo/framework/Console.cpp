@@ -1139,7 +1139,7 @@ void idConsoleLocal::Draw( bool forceFullScreen ) {
 	{
 		vr_perfHud.ClearModified();
 		int perfMode = vr_perfHud.GetInteger();
-		ovr_SetInt( vr->hmd, "PerfHudMode", perfMode );
+		ovr_SetInt( vr->hmdSession, "PerfHudMode", perfMode );
 	}
 }
 

@@ -11,6 +11,8 @@
 #include "sys\win32\win_local.h"
 #include "d3xp\physics\Clip.h"
 #include "..\dependencies\LibOVR\Include\OVR_CAPI_GL.h"
+
+
 #include "..\renderer\Framebuffer.h"
 
 #define RADIANS_TO_DEGREES(rad) ((float) rad * (float) (180.0 / idMath::PI))
@@ -81,9 +83,9 @@ iVr::iVr()
 	primaryFBOHeight = 0;
 	hmdHz = 75; // koz fixme what doesnt support 60 hz?
 	
-	hmd = nullptr;
-	oculusTextureSet[0] = 0;
-	oculusTextureSet[1] = 0;
+	hmdSession = nullptr;
+	oculusSwapChain[0] = 0;
+	oculusSwapChain[1] = 0;
 	oculusFboId = 0;
 	ocululsDepthTexID = 0;
 	oculusMirrorFboId = 0;
@@ -108,58 +110,67 @@ iVr::HMDInit
 
 void iVr::HMDInit( void ) 
 {
-	
-	// Oculus HMD Initialization
-	
-	if ( ovr_Initialize( nullptr ) == ovrSuccess )
-	{
-		common->Printf( "ovr_Initialize was successful.\n" );
-		ovrResult result  = ovr_Create( &hmd, & luid );
-		if ( result == ovrSuccess )
-		
-		{
-			
-			hmdDesc = ovr_GetHmdDesc( hmd );
-
-			// configure the tracking
-			common->Printf( "ovrHmd_Create was successful.\n" );
-			if ( ovr_ConfigureTracking( hmd, ovrTrackingCap_Orientation
-												| ovrTrackingCap_MagYawCorrection
-												| ovrTrackingCap_Position, ovrTrackingCap_Orientation ) == ovrSuccess )
-			{
-				
-				common->Printf( "ovrHmd_ConfigureTracking was successful.\n" );
-				hasOculusRift = true;
-				hasHMD = true;
-				common->Printf( "\n\nOculus Rift HMD Initialized\n" );
-								
-				
-				ovr_SetEnabledCaps( hmd, hmdDesc.DefaultHmdCaps );
-				ovr_RecenterPose( hmd ); // lets start looking forward.
-							
-								
-				hmdWidth = hmdDesc.Resolution.w;
-				hmdHeight = hmdDesc.Resolution.h;
-				
-				vr->hmdHz = hmdDesc.DisplayRefreshRate;
-				
-				com_engineHz.SetInteger( vr->hmdHz );
-				
-				common->Printf( "Hmd: %s .\n", hmdDesc.ProductName );
-				common->Printf( "Hmd HZ %d, width %d, height %d\n", vr->hmdHz, hmdWidth, hmdHeight );
-				return;
-			}
-
-		}
-	}
-	
-	common->Printf( "\nOculus Rift not detected.\n" );
 	hasHMD = false;
 	hasOculusRift = false;
 	game->isVR = false;
+	
+	// Oculus HMD Initialization
+	ovrResult result = ovr_Initialize( nullptr );
+	
+	if ( OVR_FAILURE( result ) )
+	{
+		common->Printf( "\nOculus Rift not detected.\n" );
+		return;
+	}
 
+
+	common->Printf( "ovr_Initialize was successful.\n" );
+	result  = ovr_Create( &hmdSession, & luid );
+	
+	if ( OVR_FAILURE( result ) )
+	{
+		common->Printf( "\nFailed to initialize Oculus Rift.\n" );
+		ovr_Shutdown();
+		return;
+	}
+
+	hmdDesc = ovr_GetHmdDesc( hmdSession );
+	hasOculusRift = true;
+	hasHMD = true;
+
+	//ovrSizei resoultion = hmdDesc.Resolution;
+
+	common->Printf( "\n\nOculus Rift HMD Initialized\n" );
+	//ovr_RecenterPose( hmdSession ); // lets start looking forward.
+	ovr_RecenterTrackingOrigin( hmdSession );
+	hmdWidth = hmdDesc.Resolution.w;
+	hmdHeight = hmdDesc.Resolution.h;
+	vr->hmdHz = hmdDesc.DisplayRefreshRate + 1;
+	com_engineHz.SetInteger( vr->hmdHz );
+	common->Printf( "Hmd: %s .\n", hmdDesc.ProductName );
+	common->Printf( "Hmd HZ %d, width %d, height %d\n", vr->hmdHz, hmdWidth, hmdHeight );
+		
+	ovr_GetAudioDeviceOutGuid( &oculusGuid );
+	ovr_GetAudioDeviceOutGuidStr( oculusGuidStr );
+
+	
 }
 
+/*
+==============
+iVr::HMDShutdown
+==============
+*/
+
+void iVr::HMDShutdown( void )
+{
+	ovr_DestroyTextureSwapChain( hmdSession, oculusSwapChain[0] );
+	ovr_DestroyTextureSwapChain( hmdSession, oculusSwapChain[1] );
+	
+	ovr_Destroy( hmdSession );
+	ovr_Shutdown();
+	return;
+}
 
 
 /*
@@ -173,7 +184,7 @@ void iVr::HMDInitializeDistortion()
 
 	
 	
-	if ( !vr->hmd || !vr->hasOculusRift || !vr_enable.GetBool() )
+	if ( !vr->hmdSession || !vr->hasOculusRift || !vr_enable.GetBool() )
 	{
 		game->isVR = false;
 		return;
@@ -194,18 +205,18 @@ void iVr::HMDInitializeDistortion()
 	{
 		
 		hmdEye[eye].eyeFov = vr->hmdDesc.DefaultEyeFov[eye];
-		hmdEye[eye].eyeRenderDesc = ovr_GetRenderDesc( vr->hmd, (ovrEyeType)eye, hmdEye[eye].eyeFov );
+		hmdEye[eye].eyeRenderDesc = ovr_GetRenderDesc( vr->hmdSession, (ovrEyeType)eye, hmdEye[eye].eyeFov );
 					
 		common->Printf( "EYE %d viewoffset viewadjust x %f y %f z %f\n", eye, 
-			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.x,
-			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.y,
-			hmdEye[eye].eyeRenderDesc.HmdToEyeViewOffset.z );
+			hmdEye[eye].eyeRenderDesc.HmdToEyeOffset.x,
+			hmdEye[eye].eyeRenderDesc.HmdToEyeOffset.y,
+			hmdEye[eye].eyeRenderDesc.HmdToEyeOffset.z );
 		
 
 		ovrSizei rendertarget;
 		ovrRecti viewport = { 0, 0, 0, 0 };
 
-		rendertarget = ovr_GetFovTextureSize( vr->hmd, (ovrEyeType)eye, vr->hmdEye[eye].eyeFov, vr_pixelDensity.GetFloat() ); // make sure both eyes render to the same size target
+		rendertarget = ovr_GetFovTextureSize( vr->hmdSession, (ovrEyeType)eye, vr->hmdEye[eye].eyeFov, vr_pixelDensity.GetFloat() ); // make sure both eyes render to the same size target
 				
 		hmdEye[eye].renderTarget.h = rendertarget.h; 
 		hmdEye[eye].renderTarget.w = rendertarget.w;
@@ -362,24 +373,38 @@ void iVr::HMDInitializeDistortion()
 	common->Warning( "Init Hmd FOV x,y = %f , %f. \n", hmdFovX, hmdFovY );
 	
 	common->Printf( "Creating oculus texture set width = %d height = %d.\n", hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h );
-	
+		
+	ovrTextureSwapChainDesc desc = {};
+	desc.Type = ovrTexture_2D;
+	desc.ArraySize = 1;
+	desc.Width = hmdEye[0].renderTarget.w;
+	desc.Height = hmdEye[0].renderTarget.h;
+	desc.MipLevels = 1;
+	desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+	desc.SampleCount = 1;
+	desc.StaticImage = ovrFalse;
+
+
 	// create the swap texture sets 
-	if ( (ovr_CreateSwapTextureSetGL( hmd, GL_SRGB8_ALPHA8, hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h,
-		&oculusTextureSet[0] ) != ovrSuccess) || ovr_CreateSwapTextureSetGL( hmd, GL_SRGB8_ALPHA8, hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h,
-		&oculusTextureSet[1] ) != ovrSuccess ) {
+	if (	ovr_CreateTextureSwapChainGL( hmdSession, &desc, &oculusSwapChain[0] ) != ovrSuccess ||
+			ovr_CreateTextureSwapChainGL( hmdSession, &desc, &oculusSwapChain[1] ) != ovrSuccess )
+	{
 		common->Warning( "iVr::HMDInitializeDistortion unable to create OVR swap texture set.\n VR mode is DISABLED.\n" );
 		game->isVR = false;
 
 	}
 
+	unsigned int texId = 0;
+	int length = 0;
 	for ( int j = 0; j < 2; j++ )
 	{
-	
-		for ( int i = 0; i < oculusTextureSet[j]->TextureCount; ++i )
+		ovr_GetTextureSwapChainLength( hmdSession, oculusSwapChain[j], &length );
+		for ( int i = 0; i < length; ++i )
 		{
-			ovrGLTexture* tex = (ovrGLTexture*)&oculusTextureSet[j]->Textures[i];
-			qglBindTexture( GL_TEXTURE_2D, tex->OGL.TexId );
+			ovr_GetTextureSwapChainBufferGL( hmdSession, oculusSwapChain[j], 0, &texId );
+			//oculusSwapChainTexId[j] = texId;
 
+			qglBindTexture( GL_TEXTURE_2D, texId );
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 			qglTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
@@ -399,18 +424,29 @@ void iVr::HMDInitializeDistortion()
 	int ww = glConfig.nativeScreenWidth / 2;
 	int wh = glConfig.nativeScreenHeight / 2;
 
+	ovrMirrorTextureDesc mirrorDesc;
+	memset( &mirrorDesc, 0, sizeof( mirrorDesc ) );
+	mirrorDesc.Width = ww;
+	mirrorDesc.Height = wh;
+	mirrorDesc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+	mirrorW = ww;
+	mirrorH = wh;
+
 	common->Printf( "Creating oculus mirror texture %d x %d\n", ww, wh );
-	ovr_CreateMirrorTextureGL( hmd, GL_SRGB8_ALPHA8, ww, wh, (ovrTexture**) &oculusMirrorTexture );
+	ovr_CreateMirrorTextureGL( hmdSession, &mirrorDesc, &oculusMirrorTexture );
+	ovr_GetMirrorTextureBufferGL( hmdSession, oculusMirrorTexture, &mirrorTexId );
 	qglGenFramebuffers( 1, &oculusMirrorFboId );
 	qglBindFramebuffer( GL_READ_FRAMEBUFFER, oculusMirrorFboId );
-	qglFramebufferTexture2D( GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, oculusMirrorTexture->OGL.TexId, 0 );
+	qglFramebufferTexture2D( GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mirrorTexId, 0 );
 	qglFramebufferRenderbuffer( GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0 );
 	qglBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
-
+	
+	wglSwapIntervalEXT( 0 );
+	
 	oculusLayer.Header.Type = ovrLayerType_EyeFov;
 	oculusLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
-	oculusLayer.ColorTexture[0] = oculusTextureSet[0];
-	oculusLayer.ColorTexture[1] = oculusTextureSet[1];
+	oculusLayer.ColorTexture[0] = oculusSwapChain[0];
+	oculusLayer.ColorTexture[1] = oculusSwapChain[1];
 	oculusLayer.Fov[0] = hmdEye[0].eyeRenderDesc.Fov;
 	oculusLayer.Fov[1] = hmdEye[1].eyeRenderDesc.Fov;
 	oculusLayer.Viewport[0].Pos.x = 0;
@@ -429,7 +465,8 @@ void iVr::HMDInitializeDistortion()
 	// call this once now so the oculus layer has valid values to start with
 	// when rendering the intro bink and splash screen.
 	FrameStart(); 
-	hmdTrackingState.CameraPose.Orientation.w = 1;
+	
+	/*hmdTrackingState.CameraPose.Orientation.w = 1;
 	hmdTrackingState.CameraPose.Orientation.x = 0;
 	hmdTrackingState.CameraPose.Orientation.y = 0;
 	hmdTrackingState.CameraPose.Orientation.z = 0;
@@ -437,12 +474,17 @@ void iVr::HMDInitializeDistortion()
 	hmdTrackingState.CameraPose.Position.x = 0.0f;
 	hmdTrackingState.CameraPose.Position.y = 0.0f;
 	hmdTrackingState.CameraPose.Position.z = 0.0f;
-	hmdTrackingState.HeadPose.ThePose.Position = hmdTrackingState.CameraPose.Position;
+	hmdTrackingState.HeadPose.ThePose.Position = hmdTrackingState.CameraPose.Position;*/
 
-
-
-
-
+	hmdTrackingState.HeadPose.ThePose.Orientation.w = 1;
+	hmdTrackingState.HeadPose.ThePose.Orientation.x = 0;
+	hmdTrackingState.HeadPose.ThePose.Orientation.y = 0;
+	hmdTrackingState.HeadPose.ThePose.Orientation.z = 0;
+	
+	hmdTrackingState.HeadPose.ThePose.Position.x = 0.0f;
+	hmdTrackingState.HeadPose.ThePose.Position.y = 0.0f;
+	hmdTrackingState.HeadPose.ThePose.Position.z = 0.0f;
+		
 } 
 		
 /*
@@ -471,20 +513,20 @@ void iVr::HMDGetOrientation(float &roll, float &pitch, float &yaw, idVec3 &hmdPo
 	static ovrPosef lastTrackedPose = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 } ;
 	static bool currentlyTracked;
 		
-	if ( hasOculusRift && hmd ) 
+	if ( hasOculusRift && hmdSession ) 
 	{
         
 		if ( vr_trackingPredictionAuto.GetBool() ) 
 		{
-			hmdFrameTime = ovr_GetFrameTiming( hmd, vrFrameNumber );
-			time = hmdFrameTime.DisplayMidpointSeconds;
+			hmdFrameTime = ovr_GetPredictedDisplayTime( hmdSession, 0 );// vrFrameNumber );
+			time = hmdFrameTime;// .DisplayMidpointSeconds;
 		} 
 		else 
 		{
 			time = ovr_GetTimeInSeconds() + ( vr_trackingPredictionUserDefined.GetFloat() / 1000 );
 		}
 			
-		hmdTrackingState = ovr_GetTrackingState( hmd, time );
+		hmdTrackingState = ovr_GetTrackingState( hmdSession, time,false );
 				
 		if (hmdTrackingState.StatusFlags & ( ovrStatus_OrientationTracked ) )
 		{
@@ -565,8 +607,9 @@ void iVr::FrameStart( void )
 }
 
 void iVr::HMDResetTrackingOrigin() {
-	if ( hasOculusRift && vr->hmd ) {
-		ovr_RecenterPose( vr->hmd );
+	if ( hasOculusRift && vr->hmdSession ) {
+		//ovr_RecenterPose( vr->hmdSession);
+		ovr_RecenterTrackingOrigin( vr->hmdSession );
 	}
 }
 

@@ -687,7 +687,7 @@ void idPlayerView::EmitStereoEyeView( const int eye, idMenuHandler_HUD * hudMana
 		else
 		{
 			// convert oculus IPD for this eye from meters to inches.
-			separation = vr->hmdEye[vreye].eyeRenderDesc.HmdToEyeViewOffset.x * 39.3701;
+			separation = vr->hmdEye[vreye].eyeRenderDesc.HmdToEyeOffset.x * 39.3701;
 		}
 
 		eyeView.vieworg += separation * eyeView.viewaxis[1];

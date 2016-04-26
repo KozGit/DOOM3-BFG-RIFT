@@ -30,34 +30,45 @@ eye textures: idImage leftCurrent, rightCurrent
 void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent ) 
 {
 	
-	extern ovrFrameTiming	hmdFrameTime;
+	//extern ovrFrameTiming	hmdFrameTime;
 	static ovrLayerHeader	*layers = &oculusLayer.Header;
 	static ovrPosef			eyeRenderPose[2];
-	static ovrVector3f		viewOffset[2] = { hmdEye[0].eyeRenderDesc.HmdToEyeViewOffset, hmdEye[1].eyeRenderDesc.HmdToEyeViewOffset };
+	static ovrVector3f		viewOffset[2] = { hmdEye[0].eyeRenderDesc.HmdToEyeOffset, hmdEye[1].eyeRenderDesc.HmdToEyeOffset };
 	static ovrViewScaleDesc viewScaleDesc;
 
 	static GLint windowW = glConfig.nativeScreenWidth / 4;
 	static GLint windowH = glConfig.nativeScreenHeight / 4;
-	static GLint texW = oculusMirrorTexture->OGL.Header.TextureSize.w;
-	static GLint texH = oculusMirrorTexture->OGL.Header.TextureSize.h;
+	static GLint texW = mirrorW;// oculusMirrorTexture->OGL.Header.TextureSize.w;
+	static GLint texH = mirrorH;// oculusMirrorTexture->OGL.Header.TextureSize.h;
+//	common->Printf( "Mirror w %d h %d\n", texW, texH );
 	static GLint windowTexW = windowW + texW;
 	static GLint windowTexH = windowH + texH;
 
 	// increment the oculus texture swap chain indexes
-	for ( int i = 0; i < 2; i++ )
+/*	for ( int i = 0; i < 2; i++ )
 	{
 		oculusTextureSet[i]->CurrentIndex = (oculusTextureSet[i]->CurrentIndex + 1) % oculusTextureSet[i]->TextureCount;
 	}
-			
+*/			
 	renderProgManager.BindShader_PostProcess(); // pass thru shader
 		
 	//render stereoEye images into oculus textures.
 	//left eye
-	ovrGLTexture* tex = (ovrGLTexture*)&oculusTextureSet[0]->Textures[oculusTextureSet[0]->CurrentIndex];
+	
+	//ovrGLTexture* tex = (ovrGLTexture*)&oculusTextureSet[0]->Textures[oculusTextureSet[0]->CurrentIndex];
+	
+	GLuint curTexId;
+	int curIndex;
+
+	ovr_GetTextureSwapChainCurrentIndex( hmdSession, oculusSwapChain[0], &curIndex );
+	ovr_GetTextureSwapChainBufferGL( hmdSession, oculusSwapChain[0], curIndex, &curTexId );
+	
+	
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
-	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->OGL.TexId, 0 );
+	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curTexId, 0 );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ocululsDepthTexID, 0 );
-	GL_ViewportAndScissor( 0, 0, tex->OGL.Header.TextureSize.w, tex->OGL.Header.TextureSize.h );
+	//GL_ViewportAndScissor( 0, 0, tex->OGL.Header.TextureSize.w, tex->OGL.Header.TextureSize.h );  hmdEye[0].renderTarget.w;
+	GL_ViewportAndScissor( 0, 0, hmdEye[0].renderTarget.w, hmdEye[0].renderTarget.h );
 	qglClearColor(0, 0, 0, 0 );
 	qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );	
 	GL_CheckErrors();
@@ -73,11 +84,18 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	//--------------------
 	//right eye
 	//--------------------
-	tex = (ovrGLTexture*)&oculusTextureSet[1]->Textures[oculusTextureSet[1]->CurrentIndex];
+	//tex = (ovrGLTexture*)&oculusTextureSet[1]->Textures[oculusTextureSet[1]->CurrentIndex];
+	
+	ovr_GetTextureSwapChainCurrentIndex( hmdSession, oculusSwapChain[1], &curIndex );
+	ovr_GetTextureSwapChainBufferGL( hmdSession, oculusSwapChain[1], curIndex, &curTexId );
+	
+	
+	
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
-	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->OGL.TexId, 0 );
+	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curTexId, 0 );
 	qglFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ocululsDepthTexID, 0 );
-	GL_ViewportAndScissor( 0, 0, tex->OGL.Header.TextureSize.w, tex->OGL.Header.TextureSize.h );
+	//GL_ViewportAndScissor( 0, 0, tex->OGL.Header.TextureSize.w, tex->OGL.Header.TextureSize.h );
+	GL_ViewportAndScissor( 0, 0, hmdEye[1].renderTarget.w, hmdEye[1].renderTarget.h );
 	qglClearColor( 0, 0, 0, 0 );
 	qglClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	// draw the right eye texture
@@ -89,6 +107,10 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	RB_DrawElementsWithCounters( &backEnd.unitSquareSurface ); // draw it
 	 
 	renderProgManager.Unbind();
+
+
+	ovr_CommitTextureSwapChain( hmdSession, oculusSwapChain[0] );
+	ovr_CommitTextureSwapChain( hmdSession, oculusSwapChain[1] );
 		
 	// Submit frame/layer to oculus compositor
 	qglBindFramebuffer( GL_FRAMEBUFFER, oculusFboId );
@@ -98,14 +120,14 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	ovr_CalcEyePoses( vr->hmdTrackingState.HeadPose.ThePose, viewOffset, eyeRenderPose ); 
 		
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 0.0254f; // inches to meters
-	viewScaleDesc.HmdToEyeViewOffset[0] = hmdEye[0].eyeRenderDesc.HmdToEyeViewOffset;
-	viewScaleDesc.HmdToEyeViewOffset[1] = hmdEye[1].eyeRenderDesc.HmdToEyeViewOffset;
+	viewScaleDesc.HmdToEyeOffset[0] = hmdEye[0].eyeRenderDesc.HmdToEyeOffset;
+	viewScaleDesc.HmdToEyeOffset[1] = hmdEye[1].eyeRenderDesc.HmdToEyeOffset;
 	
 	oculusLayer.RenderPose[0] = eyeRenderPose[0];
 	oculusLayer.RenderPose[1] = eyeRenderPose[1];
 	
 	static int beforeSubmit = Sys_Milliseconds();
-	ovrResult result = ovr_SubmitFrame( hmd, 0, &viewScaleDesc, &layers, 1 );
+	ovrResult result = ovr_SubmitFrame( hmdSession, 0 /*vr->vrFrameNumber*/, &viewScaleDesc, &layers, 1 );
 	if ( result != ovrSuccess )
 	{
 		common->Warning( "Vr_GL.cpp HMDRender : Failed to submit oculus layer.\n" );
@@ -121,7 +143,8 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 		// Blit mirror texture to back buffer
 		qglBindFramebuffer( GL_READ_FRAMEBUFFER, oculusMirrorFboId );
 		qglBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
-		qglBlitFramebuffer( 0, texH, texW, 0, windowW, windowH, windowTexW, windowTexH, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+		//qglBlitFramebuffer( 0, texH, texW, 0, windowW, windowH, windowTexW, windowTexH, GL_COLOR_BUFFER_BIT, GL_NEAREST );
+		qglBlitFramebuffer( 0, texH, texW, 0, 0, 0, texW,texH,	GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		qglBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 	}
 	
@@ -136,7 +159,7 @@ void iVr::HMDRender ( idImage *leftCurrent, idImage *rightCurrent )
 	static int swapset = 0;
 	if ( swapset == 0 )
 	{
-		swapset = 1;
+		//swapset = 1;
 		wglSwapIntervalEXT( 0 );
 	}
 	

@@ -29,6 +29,12 @@ If you have questions concerning this license or the applicable additional terms
 #include "../../idlib/precompiled.h"
 #include "../snd_local.h"
 #include "../../../doomclassic/doom/i_sound.h"
+#include "vr\Vr.h"
+#include "initguid.h"
+#include "Mmdeviceapi.h"
+
+
+
 
 idCVar s_showLevelMeter( "s_showLevelMeter", "0", CVAR_BOOL|CVAR_ARCHIVE, "Show VU meter" );
 idCVar s_meterTopTime( "s_meterTopTime", "1000", CVAR_INTEGER|CVAR_ARCHIVE, "How long (in milliseconds) peaks are displayed on the VU meter" );
@@ -159,6 +165,87 @@ void listDevices_f( const idCmdArgs & args ) {
 	}
 }
 
+
+/*
+========================
+DSoundtoMMEndpoint
+========================
+*/
+
+bool DSoundtoMMEndpoint( const GUID& guid, WCHAR* id, size_t maxsize, bool capture )
+{
+	if ( memcmp( &guid, &GUID_NULL, sizeof( GUID ) ) == 0 )
+		return false;
+
+
+	IMMDeviceEnumerator* pEnumerator = nullptr;
+	HRESULT hr = CoCreateInstance( __uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator );
+	if ( SUCCEEDED( hr ) )
+	{
+		IMMDeviceCollection* pCollection = nullptr;
+		hr = pEnumerator->EnumAudioEndpoints( (capture) ? eCapture : eRender, DEVICE_STATE_ACTIVE, &pCollection );
+		if ( SUCCEEDED( hr ) )
+		{
+			WCHAR szDSGUID[40];
+			swprintf_s( szDSGUID, L"{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}\n",
+				guid.Data1, guid.Data2, guid.Data3,
+				guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3],
+				guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7] );
+
+
+			UINT count = 0;
+			pCollection->GetCount( &count );
+
+			UINT index = 0;
+			for ( ; index < count; ++index )
+			{
+				IMMDevice* pDevice = nullptr;
+				hr = pCollection->Item( index, &pDevice );
+				if ( SUCCEEDED( hr ) )
+				{
+					IPropertyStore* pProps = nullptr;
+					hr = pDevice->OpenPropertyStore( STGM_READ, &pProps );
+					if ( SUCCEEDED( hr ) )
+					{
+						PROPVARIANT varName;
+						PropVariantInit( &varName );
+
+						hr = pProps->GetValue( PKEY_AudioEndpoint_GUID, &varName );
+						if ( SUCCEEDED( hr ) && ::_wcsnicmp( szDSGUID, varName.pwszVal, 38 ) == 0 )
+						{
+							LPWSTR pStrId = nullptr;
+							hr = pDevice->GetId( &pStrId );
+							if ( SUCCEEDED( hr ) )
+							{
+								wcscpy_s( id, maxsize, pStrId );
+								CoTaskMemFree( pStrId );
+								break;
+							}
+						}
+
+						PropVariantClear( &varName );
+
+						pProps->Release();
+					}
+
+					pDevice->Release();
+				}
+			}
+
+
+			if ( index >= count )
+				hr = E_FAIL;
+
+			pCollection->Release();
+		}
+
+		pEnumerator->Release();
+	}
+
+	return SUCCEEDED( hr );
+
+}
+
 /*
 ========================
 idSoundHardware_XAudio2::Init
@@ -209,26 +296,95 @@ void idSoundHardware_XAudio2::Init() {
 
 	idCmdArgs args;
 	listDevices_f( args );
+	
 
 	int preferredDevice = s_device.GetInteger();
 	if ( preferredDevice < 0 || preferredDevice >= (int)deviceCount ) {
 		int preferredChannels = 0;
-		for ( unsigned int i = 0; i < deviceCount; i++ ) {
-			XAUDIO2_DEVICE_DETAILS deviceDetails;
-			if ( pXAudio2->GetDeviceDetails( i, &deviceDetails ) != S_OK ) {
-				continue;
+
+
+		// koz begin hacky check for oculus audio 
+		// really need to use the oculus provided guid instead
+		bool deviceFound = false;
+
+		if ( vr->hasOculusRift )
+		{
+			char oculusGuiID[256] = { 0 };
+			char deviceGuiID[256]= { 0 };
+			char mbcsDisplayName[256]= { 0 };
+			WCHAR renderID[256] = { 0 };
+			
+			DSoundtoMMEndpoint( vr->oculusGuid, renderID, 256, false );
+			
+			wcstombs( oculusGuiID, renderID, sizeof( oculusGuiID ) );
+			
+			for ( unsigned int i = 0; i < deviceCount; i++ ) {
+				XAUDIO2_DEVICE_DETAILS deviceDetails;
+				if ( pXAudio2->GetDeviceDetails( i, &deviceDetails ) != S_OK ) {
+					continue;
+				}
+				
+				wcstombs( mbcsDisplayName, deviceDetails.DisplayName, sizeof( mbcsDisplayName ) );
+				wcstombs( deviceGuiID, deviceDetails.DeviceID, sizeof( mbcsDisplayName ) );
+				common->Printf( "Scan for oculus audio on device %s\n", mbcsDisplayName );
+			
+				//if ( strstr( mbcsDisplayName, "Rift Audio" ))
+				if ( strstr( oculusGuiID, deviceGuiID) )
+				{
+					common->Printf( "Rift headphones found at device %i !!\n", i );
+					preferredDevice = i;
+					preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
+					deviceFound = true;
+									
+					common->Printf( "Oculus string %s\n",oculusGuiID);
+					common->Printf( "Device string %s\n", deviceGuiID );
+
+				/*	for ( int u = 0; u < 255; u++ )
+					{
+						common->Printf( "Oculus %d %c Device %d %c\n", renderID[u], renderID[u], deviceDetails.DeviceID[u], deviceDetails.DeviceID[u] );
+					}
+							*/		
+					break;
+				}
 			}
 
-			if ( deviceDetails.Role & DefaultGameDevice ) {
-				// if we find a device the user marked as their preferred 'game' device, then always use that
-				preferredDevice = i;
-				preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
-				break;
-			}
+		}
 
-			if ( deviceDetails.OutputFormat.Format.nChannels > preferredChannels ) {
-				preferredDevice = i;
-				preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
+		if ( !deviceFound )
+		{
+		
+			for ( unsigned int i = 0; i < deviceCount; i++ ) {
+				XAUDIO2_DEVICE_DETAILS deviceDetails;
+				if ( pXAudio2->GetDeviceDetails( i, &deviceDetails ) != S_OK ) {
+					continue;
+				}
+
+				if ( vr->hasOculusRift )
+				{
+					char mbcsDisplayName[256];
+					wcstombs( mbcsDisplayName, deviceDetails.DisplayName, sizeof( mbcsDisplayName ) );
+
+					common->Printf( "scan for ocuulus dev %s\n", mbcsDisplayName );
+					if ( strstr( mbcsDisplayName, "Rift Audio" ) > 0 )
+					{
+						common->Printf( "Rift headphones found at device %i !!\n", i );
+						preferredDevice = i;
+						preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
+						break;
+					}
+				}
+
+				if ( deviceDetails.Role & DefaultGameDevice ) {
+					// if we find a device the user marked as their preferred 'game' device, then always use that
+					preferredDevice = i;
+					preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
+					break;
+				}
+
+				if ( deviceDetails.OutputFormat.Format.nChannels > preferredChannels ) {
+					preferredDevice = i;
+					preferredChannels = deviceDetails.OutputFormat.Format.nChannels;
+				}
 			}
 		}
 	}

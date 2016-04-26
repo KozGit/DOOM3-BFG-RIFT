@@ -689,7 +689,7 @@ CopyFramebuffer
 */
 void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight ) {
 
-
+	qglDisable( GL_SCISSOR_TEST ); // koz hack, there is an issue w/nvidia msaa that corrupts the blit if scissor test is enables
 	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
 
 	// Koz begin
@@ -728,6 +728,8 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight ) {
 	{
 		globalFramebuffers.primaryFBO->Bind();
 	}
+
+	qglEnable( GL_SCISSOR_TEST );
 }
 
 /*
